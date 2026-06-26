@@ -1,6 +1,6 @@
 # 工作流切换器
 
-工作流切换器用于把用户自定义分类的本地 skills 投影到 Codex、Claude 或其他 agent 的 active skills 目录。分类名称、skills 源路径、agent 目标路径都在初始化时由使用者按本机环境传入。
+工作流切换器用于把用户自定义分类的本地 skills 投影到 Codex、Claude 或其他 agent 的 active skills 目录。分类名称、skills 源路径、agent 目标路径都在初始化时由使用者按本机环境传入，插件源码不内置任何固定分类或团队路径。
 
 ## 在线安装
 
@@ -13,19 +13,21 @@ codex plugin add workflow-switcher@workflow-switcher
 
 ## 本地开发安装
 
-开发本插件时可以添加本地 marketplace：
+开发本插件时可以添加本地 marketplace。把 `<repo-root>` 替换成插件仓库所在目录：
 
 ```bash
-codex plugin marketplace add /Users/yangqy/workflow-switcher-plugin
+codex plugin marketplace add <repo-root>
 codex plugin add workflow-switcher@workflow-switcher
 ```
 
 ## 首次初始化
 
-安装后先初始化。初始化时要区分两个路径概念：
+安装后先初始化。初始化前先在本机确认两个路径概念：
 
-- skills 源路径：真实存放某一类 skills 的目录，例如团队规范仓库里的 `skills` 目录。
-- target 目标路径：某个 agent 当前读取 skills 的目录，例如 Codex 的 `~/.codex/skills`。
+- skills 源路径：真实存放某一类 skills 的目录，例如团队规范仓库里的 `skills` 目录，或你自己的某个 skills 仓库目录。
+- target 目标路径：某个 agent 当前读取 active skills 的目录，例如 Codex 的 `~/.codex/skills`。
+
+分类名不是固定值。示例里的 `team`、`writing` 只是演示，团队可以按自己的工作流命名。
 
 ### macOS 示例
 
@@ -33,7 +35,7 @@ codex plugin add workflow-switcher@workflow-switcher
 
 ```bash
 $workflow-switcher init \
-  --profile work=/Users/<user>/workspace/ai-toolkit/skills \
+  --profile team=/Users/<user>/workspace/ai-toolkit/skills \
   --profile writing=/Users/<user>/skills \
   --target-path codex=/Users/<user>/.codex/skills
 ```
@@ -52,7 +54,7 @@ $workflow-switcher init \
 
 ```powershell
 $workflow-switcher init `
-  --profile work="$env:USERPROFILE\workspace\ai-toolkit\skills" `
+  --profile team="$env:USERPROFILE\workspace\ai-toolkit\skills" `
   --profile writing="$env:USERPROFILE\skills" `
   --target-path codex="$env:USERPROFILE\.codex\skills"
 ```
@@ -65,10 +67,11 @@ $workflow-switcher init `
   --enable-target claude
 ```
 
-默认配置文件：
+默认配置文件路径：
 
 ```text
-~/.config/workflow-switcher/config.json
+macOS/Linux: ~/.config/workflow-switcher/config.json
+Windows: %USERPROFILE%\.config\workflow-switcher\config.json
 ```
 
 ## 根目录附属项
@@ -76,13 +79,12 @@ $workflow-switcher init `
 通常不需要手动配置根目录附属项。插件默认使用 `auto` 模式：
 
 - 如果 skills 根目录存在 `WORKFLOW.md`、`TEMPLATE-STANDARD.md`、`.best-practices`、`.scripts`、`templates` 等共享工作流依赖，会自动把这些根附属项一起投影。
-- 如果只是普通个人 skills 目录，即使根目录有 `README.md`，也不会单独触发根附属项投影。
+- 如果只是普通 skills 目录，即使根目录有 `README.md`，也不会单独触发根附属项投影。
 
-需要覆盖默认行为时再使用高级选项：
+因此 ai-toolkit 这类存在共享依赖的目录通常不需要手动传 `--root-entry`。只有自动识别不符合预期时，才使用高级选项覆盖默认行为；具体参数可通过 `$workflow-switcher help` 查看。
 
 ```bash
-$workflow-switcher init --root-mode work=none
-$workflow-switcher init --root-mode work=manual --root-entry work:README.md
+$workflow-switcher init --root-mode team=none
 ```
 
 ## 切换与查看

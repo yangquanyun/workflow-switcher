@@ -10,6 +10,7 @@ const STATE_FILE = ".workflow-switcher.json";
 const VALID_LINK_STRATEGIES = new Set(["auto", "symlink", "junction", "copy"]);
 const VALID_ROOT_ENTRY_MODES = new Set(["auto", "manual", "none"]);
 const RESERVED_COMMANDS = new Set(["init", "status", "switch", "use", "discover", "profiles", "help"]);
+// 这些标记用于识别 ai-toolkit 这类共享工作流根目录，避免要求用户手动维护 --root-entry。
 const AUTO_ROOT_MARKERS = [
   "WORKFLOW.md",
   "WORKFLOW-DETAILS.md",
@@ -91,9 +92,9 @@ init 选项:
   --interactive                交互式填写配置
 
 示例:
-  workflow-switcher init --profile work=/repo/ai-toolkit/skills --profile writing=~/skills
-  workflow-switcher init --root-mode work=auto --target-path claude=~/.claude/skills --enable-target claude
-  workflow-switcher switch work --target codex --dry-run --force
+  workflow-switcher init --profile team=/repo/ai-toolkit/skills --profile writing=~/skills
+  workflow-switcher init --root-mode team=auto --target-path claude=~/.claude/skills --enable-target claude
+  workflow-switcher switch team --target codex --dry-run --force
   workflow-switcher switch writing --target all --force
 `;
   console.log(text.trim());
@@ -107,11 +108,11 @@ function takeValue(args, arg, optionName) {
   return value;
 }
 
-// 解析命令行参数，只做语法拆分，不在这里读取文件系统。
+// 解析命令行参数，只做语法拆分，不在这里读取文件系统；通用选项允许放在命令前后。
 function parseArgs(argv) {
   const args = [...argv];
   const result = {
-    command: args.shift() || "help",
+    command: null,
     rest: [],
     config: null,
     target: "codex",
@@ -133,6 +134,7 @@ function parseArgs(argv) {
     if (arg === "--dry-run") result.dryRun = true;
     else if (arg === "--force") result.force = true;
     else if (arg === "--interactive") result.interactive = true;
+    else if (arg === "--help" || arg === "-h") result.command = arg;
     else if (arg === "--config" || arg.startsWith("--config=")) result.config = takeValue(args, arg, "--config");
     else if (arg === "--target" || arg.startsWith("--target=")) result.target = takeValue(args, arg, "--target");
     else if (arg === "--profile" || arg.startsWith("--profile=")) result.profileSpecs.push(takeValue(args, arg, "--profile"));
@@ -147,9 +149,11 @@ function parseArgs(argv) {
     else if (arg === "--claude-active-dir" || arg.startsWith("--claude-active-dir=")) result.targetPathSpecs.push(`claude=${takeValue(args, arg, "--claude-active-dir")}`);
     else if (arg === "--enable-claude") result.enableTargets.push("claude");
     else if (arg === "--disable-claude") result.disableTargets.push("claude");
+    else if (!result.command) result.command = arg;
     else result.rest.push(arg);
   }
 
+  result.command ||= "help";
   return result;
 }
 
@@ -356,7 +360,7 @@ async function applyInteractiveOverrides(config) {
     const next = structuredClone(config);
     let keepAdding = true;
     while (keepAdding) {
-      const profileName = await ask("分类名称，例如 work、writing、project-a");
+      const profileName = await ask("分类名称，例如 team、writing、project-a");
       if (profileName) {
         const skillsPath = await ask(`${profileName} 的 skills 路径`);
         next.profiles[validateProfileName(profileName)] = {

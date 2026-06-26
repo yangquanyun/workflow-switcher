@@ -1,6 +1,6 @@
 ---
 name: workflow-switcher
-description: 显式初始化、查看和切换本地工作流 skills 分类，把用户自定义分类的 skills 源目录投影到 Codex、Claude 或其他 agent 的 active skills 目录。仅当用户调用 $workflow-switcher，或要求配置/切换/查看本地 skills 分类、管理 Codex/Claude skills 目录、初始化团队或个人本机 skills 路径时使用。
+description: 显式初始化、查看和切换本地工作流 skills 分类，把用户自定义分类的 skills 源目录投影到 Codex、Claude 或其他 agent 的 active skills 目录。仅当用户调用 $workflow-switcher，或要求配置/切换/查看本地 skills 分类、管理 Codex/Claude skills 目录、初始化本机 skills 源路径和 agent target 目标路径时使用。
 ---
 
 # 工作流切换器
@@ -24,7 +24,7 @@ macOS 示例：
 
 ```bash
 node <skill-dir>/scripts/workflow-switcher.mjs init \
-  --profile work=/Users/<user>/workspace/ai-toolkit/skills \
+  --profile team=/Users/<user>/workspace/ai-toolkit/skills \
   --target-path codex=/Users/<user>/.codex/skills
 ```
 
@@ -32,15 +32,14 @@ Windows PowerShell 示例：
 
 ```powershell
 node <skill-dir>/scripts/workflow-switcher.mjs init `
-  --profile work="$env:USERPROFILE\workspace\ai-toolkit\skills" `
+  --profile team="$env:USERPROFILE\workspace\ai-toolkit\skills" `
   --target-path codex="$env:USERPROFILE\.codex\skills"
 ```
 
-根目录附属项默认使用 `auto` 模式。遇到 `WORKFLOW.md`、`TEMPLATE-STANDARD.md`、`.best-practices`、`.scripts`、`templates` 等共享工作流依赖时会自动纳入；普通根目录 `README.md` 不会单独触发纳入。只有需要覆盖默认行为时才使用：
+根目录附属项默认使用 `auto` 模式。遇到 `WORKFLOW.md`、`TEMPLATE-STANDARD.md`、`.best-practices`、`.scripts`、`templates` 等共享工作流依赖时会自动纳入；普通根目录 `README.md` 不会单独触发纳入。ai-toolkit 这类目录通常不需要手动传 `--root-entry`，只有自动识别不符合预期时才使用高级覆盖参数：
 
 ```bash
 node <skill-dir>/scripts/workflow-switcher.mjs init --root-mode <分类名>=none
-node <skill-dir>/scripts/workflow-switcher.mjs init --root-mode <分类名>=manual --root-entry <分类名>:README.md
 ```
 
 常用命令：
