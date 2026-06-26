@@ -7,7 +7,7 @@
 团队成员可以从 GitHub marketplace 源安装：
 
 ```bash
-codex plugin marketplace add https://github.com/yangquanyun/workflow-switcher-plugin
+codex plugin marketplace add git@github.com:yangquanyun/workflow-switcher-plugin.git
 codex plugin add workflow-switcher@workflow-switcher
 ```
 
