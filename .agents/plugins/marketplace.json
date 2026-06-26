@@ -1,0 +1,20 @@
+{
+  "name": "workflow-switcher",
+  "interface": {
+    "displayName": "工作流切换器"
+  },
+  "plugins": [
+    {
+      "name": "workflow-switcher",
+      "source": {
+        "source": "local",
+        "path": "./plugins/workflow-switcher"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
