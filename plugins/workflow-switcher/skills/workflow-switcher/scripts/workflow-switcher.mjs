@@ -92,10 +92,10 @@ init 选项:
   --interactive                交互式填写配置
 
 示例:
-  workflow-switcher init --profile team=/repo/ai-toolkit/skills --profile writing=~/skills
-  workflow-switcher init --root-mode team=auto --target-path claude=~/.claude/skills --enable-target claude
-  workflow-switcher switch team --target codex --dry-run --force
-  workflow-switcher switch writing --target all --force
+  workflow-switcher init --profile V5=/repo/seeyon-new/ai-toolkit/skills --profile ZW=/repo/1st/ai-toolkit/skills
+  workflow-switcher init --root-mode V5=auto --target-path claude=~/.claude/skills --enable-target claude
+  workflow-switcher switch V5 --target codex --dry-run --force
+  workflow-switcher switch ZW --target all --force
 `;
   console.log(text.trim());
   process.exit(exitCode);
@@ -360,7 +360,7 @@ async function applyInteractiveOverrides(config) {
     const next = structuredClone(config);
     let keepAdding = true;
     while (keepAdding) {
-      const profileName = await ask("分类名称，例如 team、writing、project-a");
+      const profileName = await ask("分类名称，例如 V5、ZW、project-a");
       if (profileName) {
         const skillsPath = await ask(`${profileName} 的 skills 路径`);
         next.profiles[validateProfileName(profileName)] = {

@@ -16,24 +16,19 @@ node <skill-dir>/scripts/workflow-switcher.mjs <arguments>
 首次安装后初始化分类。分类名由用户决定：
 
 ```bash
-node <skill-dir>/scripts/workflow-switcher.mjs init \
-  --profile <分类名>=<skills源路径>
+node <skill-dir>/scripts/workflow-switcher.mjs init --profile <分类名>=<skills源路径>
 ```
 
 macOS 示例：
 
 ```bash
-node <skill-dir>/scripts/workflow-switcher.mjs init \
-  --profile team=/Users/<user>/workspace/ai-toolkit/skills \
-  --target-path codex=/Users/<user>/.codex/skills
+node <skill-dir>/scripts/workflow-switcher.mjs init --profile V5=/Users/<user>/workspace/seeyon-new/ai-toolkit/skills --profile ZW=/Users/<user>/workspace/1st/ai-toolkit/skills --target-path codex=/Users/<user>/.codex/skills
 ```
 
 Windows PowerShell 示例：
 
 ```powershell
-node <skill-dir>/scripts/workflow-switcher.mjs init `
-  --profile team="$env:USERPROFILE\workspace\ai-toolkit\skills" `
-  --target-path codex="$env:USERPROFILE\.codex\skills"
+node <skill-dir>/scripts/workflow-switcher.mjs init --profile "V5=C:\Users\<user>\workspace\seeyon-new\ai-toolkit\skills" --profile "ZW=C:\Users\<user>\workspace\1st\ai-toolkit\skills" --target-path "codex=C:\Users\<user>\.codex\skills"
 ```
 
 根目录附属项默认使用 `auto` 模式。遇到 `WORKFLOW.md`、`TEMPLATE-STANDARD.md`、`.best-practices`、`.scripts`、`templates` 等共享工作流依赖时会自动纳入；普通根目录 `README.md` 不会单独触发纳入。ai-toolkit 这类目录通常不需要手动传 `--root-entry`，只有自动识别不符合预期时才使用高级覆盖参数：
@@ -55,9 +50,7 @@ node <skill-dir>/scripts/workflow-switcher.mjs switch <分类名>
 target 表示不同 agent 的 active skills 目录：
 
 ```bash
-node <skill-dir>/scripts/workflow-switcher.mjs init \
-  --target-path claude=~/.claude/skills \
-  --enable-target claude
+node <skill-dir>/scripts/workflow-switcher.mjs init --target-path claude=~/.claude/skills --enable-target claude
 
 node <skill-dir>/scripts/workflow-switcher.mjs switch <分类名> --target codex
 node <skill-dir>/scripts/workflow-switcher.mjs switch <分类名> --target claude

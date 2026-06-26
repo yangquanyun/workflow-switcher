@@ -27,44 +27,34 @@ codex plugin add workflow-switcher@workflow-switcher
 - skills 源路径：真实存放某一类 skills 的目录，例如团队规范仓库里的 `skills` 目录，或你自己的某个 skills 仓库目录。
 - target 目标路径：某个 agent 当前读取 active skills 的目录，例如 Codex 的 `~/.codex/skills`。
 
-分类名不是固定值。示例里的 `team`、`writing` 只是演示，团队可以按自己的工作流命名。
+分类名不是固定值。示例里的 `V5`、`ZW` 只是演示，团队可以按自己的工作流命名。
 
 ### macOS 示例
 
-下面的分类名只是示例，使用者可以替换为任意有意义的名称：
+下面的分类名只是示例，使用者可以替换为任意有意义的名称。命令写成单行，便于直接复制：
 
 ```bash
-$workflow-switcher init \
-  --profile team=/Users/<user>/workspace/ai-toolkit/skills \
-  --profile writing=/Users/<user>/skills \
-  --target-path codex=/Users/<user>/.codex/skills
+$workflow-switcher init --profile V5=/Users/<user>/workspace/seeyon-new/ai-toolkit/skills --profile ZW=/Users/<user>/workspace/1st/ai-toolkit/skills --target-path codex=/Users/<user>/.codex/skills
 ```
 
 启用 Claude target：
 
 ```bash
-$workflow-switcher init \
-  --target-path claude=/Users/<user>/.claude/skills \
-  --enable-target claude
+$workflow-switcher init --target-path claude=/Users/<user>/.claude/skills --enable-target claude
 ```
 
 ### Windows PowerShell 示例
 
-下面的分类名同样只是示例：
+下面的分类名同样只是示例。把 `<user>` 替换成 Windows 用户名：
 
 ```powershell
-$workflow-switcher init `
-  --profile team="$env:USERPROFILE\workspace\ai-toolkit\skills" `
-  --profile writing="$env:USERPROFILE\skills" `
-  --target-path codex="$env:USERPROFILE\.codex\skills"
+$workflow-switcher init --profile "V5=C:\Users\<user>\workspace\seeyon-new\ai-toolkit\skills" --profile "ZW=C:\Users\<user>\workspace\1st\ai-toolkit\skills" --target-path "codex=C:\Users\<user>\.codex\skills"
 ```
 
 启用 Claude target：
 
 ```powershell
-$workflow-switcher init `
-  --target-path claude="$env:USERPROFILE\.claude\skills" `
-  --enable-target claude
+$workflow-switcher init --target-path "claude=C:\Users\<user>\.claude\skills" --enable-target claude
 ```
 
 默认配置文件路径：
@@ -84,7 +74,7 @@ Windows: %USERPROFILE%\.config\workflow-switcher\config.json
 因此 ai-toolkit 这类存在共享依赖的目录通常不需要手动传 `--root-entry`。只有自动识别不符合预期时，才使用高级选项覆盖默认行为；具体参数可通过 `$workflow-switcher help` 查看。
 
 ```bash
-$workflow-switcher init --root-mode team=none
+$workflow-switcher init --root-mode V5=none
 ```
 
 ## 切换与查看
@@ -109,9 +99,7 @@ $workflow-switcher switch <分类名> --target codex --dry-run --force
 `target` 表示不同 agent 的 active skills 目录。默认启用 `codex`，预置但不启用 `claude`。其他 agent 如果也读取本地 skills 目录，可以按同样方式增加：
 
 ```bash
-$workflow-switcher init \
-  --target-path my-agent=/path/to/my-agent/skills \
-  --enable-target my-agent
+$workflow-switcher init --target-path my-agent=/path/to/my-agent/skills --enable-target my-agent
 
 $workflow-switcher switch <分类名> --target my-agent
 ```

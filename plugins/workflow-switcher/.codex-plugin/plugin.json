@@ -1,6 +1,6 @@
 {
   "name": "workflow-switcher",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "初始化并切换多分类本地 skills 工作流。",
   "author": {
     "name": "yangqy"
