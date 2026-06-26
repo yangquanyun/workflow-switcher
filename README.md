@@ -1,6 +1,6 @@
-# 工作流切换器
+# Workflow Switcher
 
-工作流切换器用于把用户自定义分类的本地 skills 投影到 Codex、Claude 或其他 agent 的 active skills 目录。分类名称、skills 源路径、agent 目标路径都在初始化时由使用者按本机环境传入，插件源码不内置任何固定分类或团队路径。
+Workflow Switcher 用于把用户自定义分类的本地 skills 投影到 Codex、Claude 或其他 agent 的 active skills 目录。分类名称、skills 源路径、agent 目标路径都在初始化时由使用者按本机环境传入，插件源码不内置任何固定分类或团队路径。
 
 ## 在线安装
 

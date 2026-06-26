@@ -3,7 +3,7 @@ name: workflow-switcher
 description: 显式初始化、查看和切换本地工作流 skills 分类，把用户自定义分类的 skills 源目录投影到 Codex、Claude 或其他 agent 的 active skills 目录。仅当用户调用 $workflow-switcher，或要求配置/切换/查看本地 skills 分类、管理 Codex/Claude skills 目录、初始化本机 skills 源路径和 agent target 目标路径时使用。
 ---
 
-# 工作流切换器
+# Workflow Switcher
 
 本技能是本地 skills 工作流的显式控制入口。它不内置分类名称和 skills 路径；首次使用必须由用户按本机环境初始化。
 

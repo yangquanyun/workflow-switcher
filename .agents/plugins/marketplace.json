@@ -1,7 +1,7 @@
 {
   "name": "workflow-switcher",
   "interface": {
-    "displayName": "工作流切换器"
+    "displayName": "Workflow Switcher"
   },
   "plugins": [
     {

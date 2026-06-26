@@ -1,5 +1,5 @@
 interface:
-  display_name: "工作流切换器"
+  display_name: "Workflow Switcher"
   short_description: "初始化并切换 Codex、Claude 或其他 agent 的本地 skills 分类。"
 policy:
   allow_implicit_invocation: false
