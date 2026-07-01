@@ -70,45 +70,47 @@ irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts
 workflow-switcher setup
 ```
 
-向导会让你配置两类信息。
+向导会分三步完成配置。
 
-交互中可以使用方向键选择，按回车确认；多选 target 时使用空格勾选。
+交互中可以使用方向键选择，按回车确认；多选智能体目录时使用空格勾选。
 
-第一类是 `target`：某个智能体读取 skills 的目录。
+第 1 步是添加智能体目录：某个智能体实际读取 skills 的目录。
 
 例如你可以添加：
 
 ```text
-target 名称: codex
-active skills 目录: 你本机 codex 实际读取 skills 的目录
+智能体: codex
+skills 目录: 你本机 codex 实际读取 skills 的目录
 ```
 
 也可以继续添加：
 
 ```text
-target 名称: claude
-active skills 目录: 你本机 claude 实际读取 skills 的目录
+智能体: claude
+skills 目录: 你本机 claude 实际读取 skills 的目录
 ```
 
-工具只提供 `codex`、`claude`、`自定义` 这类 target 名称选项，不会预填默认路径。路径必须由你自己确认后输入。
+工具只提供 `codex`、`claude`、`自定义` 这类智能体名称选项，不会预填默认路径。路径必须由你自己确认后输入。
 
-第二类是 `source`：一套工作流 skills 的源目录。
+第 2 步是添加工作流：一套待切换的 skills 源目录。
 
 例如：
 
 ```text
-source 名称: V5
-source skills 目录: /Users/yangqy/workspace/seeyon-new/ai-toolkit/skills
+工作流名称: V5
+工作流 skills 源目录: /Users/yangqy/workspace/seeyon-new/ai-toolkit/skills
 ```
 
 再添加一套：
 
 ```text
-source 名称: ZW
-source skills 目录: /Users/yangqy/workspace/1st/ai-toolkit/skills
+工作流名称: ZW
+工作流 skills 源目录: /Users/yangqy/workspace/1st/ai-toolkit/skills
 ```
 
-`source` 名称可以按你的习惯自定义，工具不会内置任何团队分类或业务名称。
+工作流名称可以按你的习惯自定义，工具不会内置任何团队分类或业务名称。
+
+第 3 步会保存配置，并提示你执行 `workflow-switcher doctor` 和 `workflow-switcher use`。
 
 ## 日常使用
 
