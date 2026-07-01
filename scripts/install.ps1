@@ -31,9 +31,45 @@ function Test-NodeSupported {
   return ($parts[0] -eq 20 -and $parts[1] -ge 17) -or ($parts[0] -eq 22 -and $parts[1] -ge 13) -or ($parts[0] -eq 23 -and ($parts[1] -gt 5 -or ($parts[1] -eq 5 -and $parts[2] -ge 0))) -or ($parts[0] -gt 23)
 }
 
-function Test-BinDirInPath {
-  $pathParts = $env:PATH -split [System.IO.Path]::PathSeparator
-  return $pathParts | Where-Object { $_.TrimEnd("\") -eq $binDir.TrimEnd("\") }
+function Normalize-PathEntry {
+  param([string]$PathEntry)
+  if ([string]::IsNullOrWhiteSpace($PathEntry)) { return "" }
+  return $PathEntry.Trim().TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar)
+}
+
+function Test-BinDirInPathValue {
+  param([string]$PathValue)
+  $expected = Normalize-PathEntry $binDir
+  $pathParts = $PathValue -split [System.IO.Path]::PathSeparator
+  return $pathParts | Where-Object { (Normalize-PathEntry $_) -eq $expected }
+}
+
+function Test-BinDirInCurrentPath {
+  return Test-BinDirInPathValue $env:PATH
+}
+
+function Add-BinDirToUserPath {
+  try {
+    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    if (-not (Test-BinDirInPathValue $userPath)) {
+      $nextUserPath = if ([string]::IsNullOrWhiteSpace($userPath)) { $binDir } else { $userPath.TrimEnd(';') + ';' + $binDir }
+      [Environment]::SetEnvironmentVariable('Path', $nextUserPath, 'User')
+    }
+
+    # 同步当前 PowerShell 会话，避免用户必须立刻重开终端才能继续 setup。
+    if (-not (Test-BinDirInCurrentPath)) {
+      $env:PATH = if ([string]::IsNullOrWhiteSpace($env:PATH)) { $binDir } else { $env:PATH.TrimEnd(';') + ';' + $binDir }
+    }
+
+    return $true
+  } catch {
+    Write-Host "⚠️ 自动添加 PATH 失败"
+    Write-Host ""
+    Write-Host "原因"
+    Write-Host "  $($_.Exception.Message)"
+    Write-Host ""
+    return $false
+  }
 }
 
 function Print-Success {
@@ -44,24 +80,30 @@ function Print-Success {
   Write-Host "  命令入口: $cmdPath"
   Write-Host ""
 
-  if (Test-BinDirInPath) {
+  if (Test-BinDirInCurrentPath) {
     Write-Host "✅ 命令已可用"
     Write-Host ""
     Write-Host "下一步"
     Write-Host "  workflow-switcher setup"
   } else {
-    Write-Host "⚠️ 命令暂时不可用"
+    Write-Host "⚠️ 命令暂时不可用，正在自动添加到用户 PATH"
     Write-Host ""
     Write-Host "原因"
-    Write-Host "  $binDir 不在当前 PATH 中"
+    Write-Host "  workflow-switcher 已安装成功，但当前终端还找不到这个命令。"
+    Write-Host "  $binDir 不在当前 PATH 中。"
     Write-Host ""
-    Write-Host "处理方式"
-    Write-Host "  `$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')"
-    Write-Host "  if ((`$userPath -split ';') -notcontains '$binDir') { [Environment]::SetEnvironmentVariable('Path', (`$userPath.TrimEnd(';') + ';$binDir'), 'User') }"
-    Write-Host "  然后重新打开 PowerShell"
-    Write-Host ""
-    Write-Host "或者直接执行"
-    Write-Host "  $cmdPath setup"
+    if (Add-BinDirToUserPath) {
+      Write-Host "✅ 已添加到用户 PATH"
+      Write-Host ""
+      Write-Host "下一步"
+      Write-Host "  workflow-switcher setup"
+      Write-Host ""
+      Write-Host "如果当前窗口仍提示命令不存在，请重新打开 PowerShell 后再执行。"
+    } else {
+      Write-Host "处理方式"
+      Write-Host "  请重新打开 PowerShell 后重试，或直接执行："
+      Write-Host "  $cmdPath setup"
+    }
   }
 
   Write-Host ""

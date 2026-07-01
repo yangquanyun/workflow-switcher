@@ -67,7 +67,7 @@ irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts
 workflow-switcher setup
 ```
 
-安装脚本会输出安装位置、命令入口、下一步命令。如果当前终端还不能直接执行 `workflow-switcher`，脚本会给出 PATH 处理方式和可直接运行的完整路径命令。
+安装脚本会输出安装位置、命令入口、下一步命令。Windows 安装脚本会在需要时自动把命令目录写入用户 PATH；如果当前窗口没有立即生效，重新打开 PowerShell 后再执行 `workflow-switcher setup`。
 
 ## 三分钟上手
 
