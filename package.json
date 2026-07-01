@@ -1,0 +1,19 @@
+{
+  "name": "workflow-switcher",
+  "version": "2.0.0",
+  "private": true,
+  "description": "跨平台本地 workflow skills 切换脚手架。",
+  "type": "module",
+  "bin": {
+    "workflow-switcher": "./bin/workflow-switcher.mjs"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
