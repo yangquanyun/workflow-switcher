@@ -93,6 +93,14 @@ export function kv(key, value) {
 }
 
 /**
+ * 输出无图标的过程说明，避免交互向导中图标过密。
+ * @param {string} message 提示文案。
+ */
+export function note(message) {
+  console.log(`  ${message}`);
+}
+
+/**
  * 输出错误键值信息，和失败标题同走 stderr 保证顺序稳定。
  * @param {string} key 键。
  * @param {string | number} value 值。

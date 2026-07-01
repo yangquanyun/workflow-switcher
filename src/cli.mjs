@@ -12,7 +12,7 @@ import { readState } from "./state.mjs";
 import { validateName } from "./validation.mjs";
 import { askConfirm, askMultiSelect, askSelect, askText, closePrompt, createPrompt } from "./prompt.mjs";
 import { printDoctor, runDoctor } from "./doctor.mjs";
-import { banner, commandList, errorKv, failure, info, kv, nameText, pathText, printResolution, section, spin, step, success, table, warn } from "./output.mjs";
+import { banner, commandList, errorKv, failure, info, kv, nameText, note, pathText, printResolution, section, spin, step, success, table, warn } from "./output.mjs";
 
 /**
  * 校验 source 目录并打印扫描结果，保存配置前提前暴露路径和重复名称问题。
@@ -32,15 +32,18 @@ function validateAndPrintSource(skillsDir) {
 /**
  * 校验工作流目录并返回扫描结果，供 setup 汇总展示使用。
  * @param {string} skillsDir 工作流 skills 源目录。
+ * @param {{quiet?:boolean}} options 输出选项。
  * @returns {{skills:Array,rootAdjuncts:Array}} 扫描结果。
  */
-function validateSource(skillsDir) {
+function validateSource(skillsDir, options = {}) {
   if (!fs.existsSync(skillsDir)) throw new Error(`工作流 skills 源目录不存在: ${skillsDir}`);
-  return spin("扫描工作流目录", () => {
+  const scan = () => {
     const discovered = discoverSource(skillsDir);
     assertNoDuplicateNames(discovered, skillsDir);
     return discovered;
-  }, "工作流目录检测通过");
+  };
+  if (options.quiet) return scan();
+  return spin("扫描工作流目录", scan, "工作流目录检测通过");
 }
 
 /**
@@ -287,7 +290,7 @@ async function collectSetupDraft(rl, baseConfig, plan) {
     while (shouldAddTarget) {
       const target = await promptTarget(rl);
       draftTargets.push(target);
-      success(`已记录工具目录: ${target.name}  ${pathText(target.activeDir)}`);
+      note(`已记录工具目录: ${nameText(target.name)}  ${pathText(target.activeDir)}`);
       shouldAddTarget = await askConfirm(rl, "继续添加另一个工具目录？", false);
     }
   }
@@ -299,9 +302,10 @@ async function collectSetupDraft(rl, baseConfig, plan) {
       const name = validateName(await askText(rl, "请输入工作流名称"), "source");
       info("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
       const skillsDir = await askText(rl, "请输入工作流 skills 源目录");
-      const discovered = validateSource(skillsDir);
+      const discovered = validateSource(skillsDir, { quiet: true });
       draftSources.push({ name, skillsDir, skills: discovered.skills.length, rootAdjuncts: discovered.rootAdjuncts.length });
-      success(`已记录工作流: ${name}  ${discovered.skills.length} skills / ${discovered.rootAdjuncts.length} 共享项`);
+      note(`工作流目录检测通过`);
+      note(`已记录工作流: ${nameText(name)}  ${discovered.skills.length} skills / ${discovered.rootAdjuncts.length} 共享项`);
       shouldAddSource = await askConfirm(rl, "继续添加另一个工作流？", false);
     }
   }
@@ -317,8 +321,11 @@ async function collectSetupDraft(rl, baseConfig, plan) {
     ...draftSources.map((source) => ["工作流", source.name, pathText(source.skillsDir), `${source.skills} skills / ${source.rootAdjuncts} 共享项`]),
   ];
   table(["类型", "名称", "路径", "检测结果"], summaryRows);
-  const shouldSave = await askConfirm(rl, "保存以上配置？", true);
-  if (!shouldSave) {
+  const saveAction = await askSelect(rl, "请选择是否保存以上配置", [
+    { label: "暂不保存，结束 setup", value: "cancel" },
+    { label: "保存配置并结束 setup", value: "save" },
+  ]);
+  if (saveAction !== "save") {
     warn("已取消保存，现有配置未改变。");
     return config;
   }
