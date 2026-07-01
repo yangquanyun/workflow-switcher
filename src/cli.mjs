@@ -12,7 +12,7 @@ import { readState } from "./state.mjs";
 import { validateName } from "./validation.mjs";
 import { askConfirm, askMultiSelect, askSelect, askText, closePrompt, createPrompt } from "./prompt.mjs";
 import { printDoctor, runDoctor } from "./doctor.mjs";
-import { errorKv, failure, info, kv, nameText, pathText, printResolution, step, success, warn } from "./output.mjs";
+import { banner, commandList, errorKv, failure, info, kv, nameText, pathText, printResolution, section, spin, step, success, table, warn } from "./output.mjs";
 
 /**
  * 校验 source 目录并打印扫描结果，保存配置前提前暴露路径和重复名称问题。
@@ -20,9 +20,11 @@ import { errorKv, failure, info, kv, nameText, pathText, printResolution, step, 
  */
 function validateAndPrintSource(skillsDir) {
   if (!fs.existsSync(skillsDir)) throw new Error(`工作流 skills 源目录不存在: ${skillsDir}`);
-  const discovered = discoverSource(skillsDir);
-  assertNoDuplicateNames(discovered, skillsDir);
-  success("工作流目录检测通过");
+  const discovered = spin("扫描工作流目录", () => {
+    const result = discoverSource(skillsDir);
+    assertNoDuplicateNames(result, skillsDir);
+    return result;
+  }, "工作流目录检测通过");
   kv("skills", discovered.skills.length);
   kv("根附属项", discovered.rootAdjuncts.length);
 }
@@ -94,26 +96,34 @@ async function runMenu() {
  * 打印帮助文案。
  */
 function printHelp() {
-  console.log(`
-workflow-switcher <命令> [参数]
-
-命令:
-  setup                         交互式初始化工作流和工具目录
-  source add [名称] [路径]       添加工作流
-  source list                   查看工作流列表
-  source remove <名称>          删除工作流配置
-  target add [名称] [路径]       添加工具目录
-  target list                   查看工具目录列表
-  target remove <名称>          删除工具目录配置
-  use [source]                  切换工作流，不传 source 时进入选择
-  current                       查看当前工具目录状态
-  status                        查看配置和当前状态
-  doctor                        诊断配置、路径和 symlink 权限
-  help                          显示帮助
-
-选项:
-  --target <名称|all>           指定 use 的工具目录，可重复
-`.trim());
+  banner("命令速查");
+  section("用法");
+  console.log("  workflow-switcher <命令> [参数]");
+  section("常用流程");
+  commandList([
+    ["workflow-switcher setup", "初始化工具目录和工作流"],
+    ["workflow-switcher doctor", "检查路径和软链接权限"],
+    ["workflow-switcher use", "选择并切换工作流"],
+  ]);
+  section("命令");
+  table(
+    ["命令", "说明"],
+    [
+      ["setup", "交互式初始化工作流和工具目录"],
+      ["source add [名称] [路径]", "添加工作流"],
+      ["source list", "查看工作流列表"],
+      ["source remove <名称>", "删除工作流配置"],
+      ["target add [名称] [路径]", "添加工具目录"],
+      ["target list", "查看工具目录列表"],
+      ["target remove <名称>", "删除工具目录配置"],
+      ["use [source]", "切换工作流，不传 source 时进入选择"],
+      ["current", "查看当前工具目录状态"],
+      ["status", "查看配置和当前状态"],
+      ["doctor", "诊断配置、路径和 symlink 权限"],
+    ],
+  );
+  section("选项");
+  table(["选项", "说明"], [["--target <名称|all>", "指定 use 的工具目录，可重复"]]);
 }
 
 /**
@@ -215,7 +225,7 @@ async function runSetup() {
   let config = loadConfig();
   const rl = createPrompt();
   try {
-    success("开始初始化 Workflow Switcher");
+    banner("初始化本机工作流切换配置");
     info("先配置工具读取 skills 的目录，再配置可切换的工作流目录。");
 
     guideStep("第 1 步：添加工具目录");
@@ -256,10 +266,8 @@ async function runSetup() {
 function printSources(config) {
   const entries = Object.entries(config.sources);
   if (entries.length === 0) return warn("暂无工作流，请执行 workflow-switcher source add");
-  for (const [name, source] of entries) {
-    success(`工作流 ${nameText(name)}`);
-    kv("skills 源目录", pathText(source.skillsDir));
-  }
+  section("工作流");
+  table(["名称", "skills 源目录"], entries.map(([name, source]) => [nameText(name), pathText(source.skillsDir)]));
 }
 
 /**
@@ -269,10 +277,8 @@ function printSources(config) {
 function printTargets(config) {
   const entries = Object.entries(config.targets);
   if (entries.length === 0) return warn("暂无工具目录，请执行 workflow-switcher target add");
-  for (const [name, target] of entries) {
-    success(`工具目录 ${nameText(name)}`);
-    kv("skills 目录", pathText(target.activeDir));
-  }
+  section("工具目录");
+  table(["名称", "skills 目录"], entries.map(([name, target]) => [nameText(name), pathText(target.activeDir)]));
 }
 
 /**
@@ -321,16 +327,21 @@ async function runUse(sourceName, options) {
   const selectedSourceName = await selectSourceForUse(config, sourceName);
   const targetNames = await selectTargetsForUse(config, options.target);
   if (targetNames.length === 0) throw new Error("未配置可用工具目录");
-  step(`开始切换到 ${selectedSourceName}`);
-  const results = switchSource(config, selectedSourceName, targetNames);
+  const results = spin(`切换到工作流 ${selectedSourceName}`, () => switchSource(config, selectedSourceName, targetNames), "工作流切换完成");
   for (const result of results) {
-    success(`[${result.targetName}] 已切换到 ${result.sourceName}`);
-    kv("skills 目录", pathText(result.activeDir));
-    kv("skills", result.skills);
-    kv("根附属项", result.rootAdjuncts);
-    kv("新建", result.created.length);
-    kv("复用", result.unchanged.length);
-    kv("移除", result.removed.length);
+    section(`结果: ${result.targetName}`);
+    table(
+      ["项目", "结果"],
+      [
+        ["工作流", result.sourceName],
+        ["skills 目录", pathText(result.activeDir)],
+        ["skills", result.skills],
+        ["根附属项", result.rootAdjuncts],
+        ["新建", result.created.length],
+        ["复用", result.unchanged.length],
+        ["移除", result.removed.length],
+      ],
+    );
     for (const warning of result.warnings) warn(`[${result.targetName}] ${warning}`);
   }
   info("切换完成后，请新开对应智能体会话或重启客户端，让 skills 列表刷新。");
@@ -342,8 +353,8 @@ async function runUse(sourceName, options) {
  */
 function printCurrent(verbose = false) {
   const config = loadConfig();
+  banner("当前配置与切换状态");
   if (verbose) {
-    info("配置概览");
     kv("配置文件", pathText(configPath()));
     printSources(config);
     printTargets(config);
@@ -352,12 +363,13 @@ function printCurrent(verbose = false) {
     warn("暂无工具目录，请先执行 workflow-switcher target add");
     return;
   }
+  const rows = [];
   for (const [name, target] of Object.entries(config.targets)) {
     const state = readState(target.activeDir);
-    info(`工具目录 ${name}`);
-    kv("当前工作流", state.currentSource || "none");
-    kv("skills 目录", pathText(target.activeDir));
+    rows.push([nameText(name), state.currentSource || "none", pathText(target.activeDir)]);
   }
+  section("当前状态");
+  table(["工具", "当前工作流", "skills 目录"], rows);
 }
 
 /**
@@ -409,7 +421,7 @@ export async function main(argv = []) {
     if (parsed.command === "status") return printCurrent(true);
     if (parsed.command === "doctor") {
       const config = loadConfig();
-      return printDoctor(runDoctor(config, configPath()));
+      return printDoctor(spin("检查配置、路径和软链接权限", () => runDoctor(config, configPath()), "诊断完成"));
     }
 
     throw new Error(`未知命令: ${parsed.command}`);

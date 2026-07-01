@@ -2,14 +2,56 @@
  * 统一终端输出样式。
  * by AI.Coding
  */
+import { createRequire } from "node:module";
+import boxen from "boxen";
 import chalk from "chalk";
+import Table from "cli-table3";
+import figures from "figures";
+import ora from "ora";
+
+const require = createRequire(import.meta.url);
+const { Line } = require("clui");
+const accent = chalk.hex("#7dd3fc");
+const muted = chalk.dim;
+const brand = chalk.hex("#a7f3d0");
+
+/**
+ * 判断是否应该启用动画 spinner，非 TTY 下输出稳定文本。
+ * @returns {boolean} 是否启用动画。
+ */
+function spinnerEnabled() {
+  return Boolean(process.stdout.isTTY && !process.env.CI);
+}
+
+/**
+ * 输出产品标题卡片。
+ * @param {string} subtitle 副标题。
+ */
+export function banner(subtitle = "切换团队工作流，保持 agent skills 干净可控") {
+  console.log(
+    boxen(`${brand.bold("Workflow Switcher")}\n${muted(subtitle)}`, {
+      padding: { top: 0, bottom: 0, left: 1, right: 1 },
+      margin: { top: 0, bottom: 1 },
+      borderColor: "cyan",
+      borderStyle: "round",
+    }),
+  );
+}
+
+/**
+ * 输出分区标题。
+ * @param {string} title 分区标题。
+ */
+export function section(title) {
+  console.log(`\n${accent.bold(title)}`);
+}
 
 /**
  * 输出成功信息。
  * @param {string} message 提示文案。
  */
 export function success(message) {
-  console.log(`${chalk.green("✓")} ${chalk.bold(message)}`);
+  console.log(`${chalk.green(figures.tick)} ${chalk.bold(message)}`);
 }
 
 /**
@@ -17,7 +59,7 @@ export function success(message) {
  * @param {string} message 提示文案。
  */
 export function failure(message) {
-  console.error(`${chalk.red("✗")} ${chalk.bold(message)}`);
+  console.error(`${chalk.red(figures.cross)} ${chalk.bold(message)}`);
 }
 
 /**
@@ -25,7 +67,7 @@ export function failure(message) {
  * @param {string} message 提示文案。
  */
 export function warn(message) {
-  console.log(`${chalk.yellow("⚠")} ${message}`);
+  console.log(`${chalk.yellow(figures.warning)} ${message}`);
 }
 
 /**
@@ -33,7 +75,7 @@ export function warn(message) {
  * @param {string} message 提示文案。
  */
 export function info(message) {
-  console.log(`${chalk.cyan("ℹ")} ${message}`);
+  console.log(`${chalk.cyan(figures.info)} ${message}`);
 }
 
 /**
@@ -41,7 +83,7 @@ export function info(message) {
  * @param {string} message 提示文案。
  */
 export function step(message) {
-  console.log(`${chalk.blue("→")} ${chalk.bold(message)}`);
+  console.log(`${chalk.blue(figures.pointer)} ${chalk.bold(message)}`);
 }
 
 /**
@@ -50,7 +92,7 @@ export function step(message) {
  * @param {string | number} value 值。
  */
 export function kv(key, value) {
-  console.log(`  ${chalk.dim(`${key}:`)} ${chalk.white(String(value))}`);
+  console.log(`  ${muted(`${key}:`)} ${chalk.white(String(value))}`);
 }
 
 /**
@@ -59,7 +101,7 @@ export function kv(key, value) {
  * @param {string | number} value 值。
  */
 export function errorKv(key, value) {
-  console.error(`  ${chalk.dim(`${key}:`)} ${chalk.white(String(value))}`);
+  console.error(`  ${muted(`${key}:`)} ${chalk.white(String(value))}`);
 }
 
 /**
@@ -78,6 +120,58 @@ export function pathText(value) {
  */
 export function nameText(value) {
   return chalk.bold(value);
+}
+
+/**
+ * 使用表格输出结构化数据。
+ * @param {string[]} head 表头。
+ * @param {Array<Array<string|number>>} rows 行数据。
+ */
+export function table(head, rows) {
+  if (rows.length === 0) return;
+  const output = new Table({
+    head: head.map((item) => accent.bold(item)),
+    style: { head: [], border: ["gray"], compact: true },
+    wordWrap: true,
+  });
+  output.push(...rows.map((row) => row.map((item) => String(item))));
+  console.log(output.toString());
+}
+
+/**
+ * 使用 clui 输出紧凑命令清单。
+ * @param {Array<[string,string]>} rows 命令和说明。
+ */
+export function commandList(rows) {
+  for (const [command, description] of rows) {
+    console.log(new Line().padding(2).column(chalk.bold(command), 34).column(muted(description), 40).contents().trimEnd());
+  }
+}
+
+/**
+ * 用 spinner 包裹同步操作，失败时会标记失败后继续抛出错误。
+ * @template T
+ * @param {string} text 运行中文案。
+ * @param {() => T} task 同步任务。
+ * @param {string} successText 成功文案。
+ * @returns {T} 任务结果。
+ */
+export function spin(text, task, successText = text) {
+  if (!spinnerEnabled()) {
+    step(text);
+    const result = task();
+    success(successText);
+    return result;
+  }
+  const spinner = ora({ text, color: "cyan" }).start();
+  try {
+    const result = task();
+    spinner.succeed(successText);
+    return result;
+  } catch (error) {
+    spinner.fail("操作未完成");
+    throw error;
+  }
 }
 
 /**

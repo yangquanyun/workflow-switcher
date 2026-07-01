@@ -1,34 +1,14 @@
 # Workflow Switcher
 
-Workflow Switcher 是一个本地命令行工具，用来在不同工作流之间切换可用的 agent skills。
+一个用于切换本机 agent skills 工作流的跨平台 CLI。
 
-当你同时维护多套业务工作流时，例如一套用于 V5 项目、一套用于 ZW 项目，如果把所有 skills 都放进 codex、claude 等智能体的 skills 目录，智能体可能会自动命中错误的 workflow。Workflow Switcher 的作用就是让每个智能体在同一时间只看到你当前选择的那一套工作流。
+当你同时维护多套业务工作流时，把所有 skills 都放进 Codex、Claude 等工具目录，容易触发错误的 workflow。Workflow Switcher 只把当前选择的那一套工作流通过软链接关联到工具目录，让每个工具在同一时间只看到需要的 skills。
 
-它支持 macOS 和 Windows。
+支持 macOS 和 Windows。只使用软链接，不会自动 copy，也不会降级为 junction。
 
-## 它解决什么问题
+## 快速安装
 
-你可以用它完成这些事情：
-
-- 给本机添加多套工作流目录，例如 `V5`、`ZW`。
-- 给本机添加多个工具目录，例如 `codex`、`claude`。
-- 一条命令把某套工作流切换到一个或多个智能体。
-- 切换前自动检查路径、重复 skill 名称、符号链接权限和同名冲突。
-- 切换失败时保留原来的工作流，不会先删后失败。
-
-## 安装前准备
-
-需要先安装 Node.js 20.17 或更高的 LTS 版本，推荐使用 Node.js 22 LTS。
-
-检查版本：
-
-```bash
-node -v
-```
-
-如果版本不满足上述要求，请先升级 Node.js。CLI 使用新版交互组件，旧版本 Node 可能无法启动。
-
-## 一键安装
+需要 Node.js 20.17 或更高的 LTS 版本，推荐 Node.js 22 LTS。
 
 macOS / Linux：
 
@@ -42,9 +22,197 @@ Windows PowerShell：
 irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/install.ps1 | iex
 ```
 
-安装完成后，按提示执行 `workflow-switcher setup` 进入初始化向导。
+安装成功后执行：
 
-安装成功后会看到安装位置、命令入口和下一步命令。如果当前终端还不能直接执行 `workflow-switcher`，安装脚本会给出可复制的 PATH 处理方式，也会给出完整路径形式的初始化命令。
+```bash
+workflow-switcher setup
+```
+
+安装脚本会输出安装位置、命令入口、下一步命令。如果当前终端还不能直接执行 `workflow-switcher`，脚本会给出 PATH 处理方式和可直接运行的完整路径命令。
+
+## 三分钟上手
+
+第 1 步，初始化配置：
+
+```bash
+workflow-switcher setup
+```
+
+向导会要求你配置两类目录：
+
+- 工具目录：Codex、Claude 或其他工具实际读取 skills 的目录。
+- 工作流目录：某套业务工作流的 skills 源目录，例如 `V5`、`ZW`。
+
+第 2 步，检查环境：
+
+```bash
+workflow-switcher doctor
+```
+
+第 3 步，切换工作流：
+
+```bash
+workflow-switcher use
+```
+
+切换完成后，请新开对应 agent 会话，或重启对应客户端，让 skills 列表刷新。
+
+## 常用命令
+
+打开交互菜单：
+
+```bash
+workflow-switcher
+```
+
+初始化配置：
+
+```bash
+workflow-switcher setup
+```
+
+选择并切换工作流：
+
+```bash
+workflow-switcher use
+```
+
+指定工作流和工具目录：
+
+```bash
+workflow-switcher use V5 --target codex
+```
+
+切换到所有已启用工具目录：
+
+```bash
+workflow-switcher use ZW --target all
+```
+
+查看状态：
+
+```bash
+workflow-switcher status
+```
+
+检查路径和软链接权限：
+
+```bash
+workflow-switcher doctor
+```
+
+## 配置管理
+
+添加工作流：
+
+```bash
+workflow-switcher source add V5 /path/to/v5/skills
+```
+
+添加工具目录：
+
+```bash
+workflow-switcher target add codex /path/to/codex/skills
+```
+
+查看已配置工作流：
+
+```bash
+workflow-switcher source list
+```
+
+查看已配置工具目录：
+
+```bash
+workflow-switcher target list
+```
+
+删除工作流配置：
+
+```bash
+workflow-switcher source remove V5
+```
+
+删除工具目录配置：
+
+```bash
+workflow-switcher target remove codex
+```
+
+删除配置不会删除你的真实工作流目录，也不会删除 Codex、Claude 等工具目录。
+
+## 目录概念
+
+### 工具目录
+
+工具目录是 Codex、Claude 或其他 agent 工具实际读取 skills 的目录。
+
+Workflow Switcher 内置的只是 `codex`、`claude`、`自定义` 这几个名称选项，不会预填默认路径。每个人设备不同，路径必须由用户手动确认。
+
+示例：
+
+```text
+工具: codex
+skills 目录: 你本机 codex 实际读取 skills 的目录
+```
+
+### 工作流目录
+
+工作流目录是一套待切换的 skills 源目录。名称完全自定义，不内置任何团队、业务或分类。
+
+示例：
+
+```text
+工作流名称: V5
+工作流 skills 源目录: /Users/yangqy/workspace/seeyon-new/ai-toolkit/skills
+```
+
+```text
+工作流名称: ZW
+工作流 skills 源目录: /Users/yangqy/workspace/1st/ai-toolkit/skills
+```
+
+## 根目录共享项
+
+工作流目录不仅可以包含 skill 子目录，也可以包含共享说明、模板和脚本。命中以下项目时，Workflow Switcher 会一起通过软链接关联到工具目录：
+
+```text
+README.md
+WORKFLOW.md
+WORKFLOW-DETAILS.md
+TEMPLATE-STANDARD.md
+.best-practices
+.scripts
+templates
+```
+
+## Windows 软链接权限
+
+Windows 创建软链接需要系统权限。如果 `doctor` 或 `use` 提示无法创建符号链接，请选择一种方式处理：
+
+```text
+1. 开启 Windows Developer Mode。
+2. 让管理员授予 Create symbolic links 权限。
+3. 以管理员身份运行终端。
+```
+
+修复后重新检查：
+
+```bash
+workflow-switcher doctor
+```
+
+## 安全规则
+
+Workflow Switcher 只管理自己创建并记录的软链接。
+
+每个工具目录中会写入：
+
+```text
+.workflow-switcher.json
+```
+
+后续切换时，只会清理这个状态文件中记录的受控项。如果工具目录里已经存在同名文件或目录，但不是 Workflow Switcher 管理的内容，切换会停止并提示你手动处理，避免误删。
 
 ## 一键卸载
 
@@ -60,205 +228,17 @@ Windows PowerShell：
 irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/uninstall.ps1 | iex
 ```
 
-卸载会删除 Workflow Switcher 自身的安装目录、命令入口和配置目录，不会删除你的真实工作流目录，也不会删除 codex、claude 等智能体的 skills 目录。
-
-## 第一次使用
-
-运行：
-
-```bash
-workflow-switcher setup
-```
-
-向导会分三步完成配置。
-
-交互中可以使用方向键选择，按回车确认；多选工具目录时使用空格勾选。
-
-第 1 步是添加工具目录：某个工具实际读取 skills 的目录。
-
-例如你可以添加：
-
-```text
-工具: codex
-skills 目录: 你本机 codex 实际读取 skills 的目录
-```
-
-也可以继续添加：
-
-```text
-工具: claude
-skills 目录: 你本机 claude 实际读取 skills 的目录
-```
-
-工具只提供 `codex`、`claude`、`自定义` 这类工具名称选项，不会预填默认路径。路径必须由你自己确认后输入。
-
-第 2 步是添加工作流：一套待切换的 skills 源目录。
-
-例如：
-
-```text
-工作流名称: V5
-工作流 skills 源目录: /Users/yangqy/workspace/seeyon-new/ai-toolkit/skills
-```
-
-再添加一套：
-
-```text
-工作流名称: ZW
-工作流 skills 源目录: /Users/yangqy/workspace/1st/ai-toolkit/skills
-```
-
-工作流名称可以按你的习惯自定义，工具不会内置任何团队分类或业务名称。
-
-第 3 步会保存配置，并提示你执行 `workflow-switcher doctor` 和 `workflow-switcher use`。
-
-## 日常使用
-
-打开交互菜单：
-
-```bash
-workflow-switcher
-```
-
-查看已配置的工作流和目标目录：
-
-```bash
-workflow-switcher source list
-workflow-switcher target list
-```
-
-切换工作流：
-
-```bash
-workflow-switcher use
-workflow-switcher use V5 --target codex
-workflow-switcher use ZW --target all
-```
-
-不带 source 执行 `workflow-switcher use` 时，会进入交互选择；如果配置了多个 target，也会继续让你勾选要切换的工具目录。
-
-查看当前状态：
-
-```bash
-workflow-switcher current
-workflow-switcher status
-```
-
-检查环境和常见问题：
-
-```bash
-workflow-switcher doctor
-```
-
-## 添加和删除配置
-
-添加配置：
-
-```bash
-workflow-switcher source add V5 /path/to/v5/skills
-workflow-switcher target add codex /path/to/active/skills
-```
-
-删除配置：
-
-```bash
-workflow-switcher source remove V5
-workflow-switcher target remove codex
-```
-
-删除配置不会删除你的真实工作流目录，也不会删除工具目录。
-
-## 切换后需要做什么
-
-切换完成后，请新开对应智能体会话，或重启对应客户端，让它重新读取 skills 列表。
-
-例如你刚执行：
-
-```bash
-workflow-switcher use V5 --target codex
-```
-
-然后需要新开一个 codex 会话，才能稳定使用 V5 的 skills。
-
-## 输出说明
-
-命令行输出会用图标区分状态：
-
-```text
-✓ 成功
-✗ 失败
-⚠ 警告
-ℹ 提示
-→ 当前步骤
-```
-
-操作失败时会给出失败原因和处理方式。例如路径不存在、Windows 无法创建符号链接、目标目录存在同名非受控文件等。
-
-## Windows 用户注意
-
-Workflow Switcher 只使用符号链接，不会自动改用 copy 或 junction。
-
-Windows 创建符号链接需要系统权限。如果 `doctor` 或 `use` 提示无法创建符号链接，请选择一种方式处理：
-
-```text
-1. 开启 Windows Developer Mode。
-2. 让管理员授予 Create symbolic links 权限。
-3. 以管理员身份运行终端。
-```
-
-修复后重新执行：
-
-```bash
-workflow-switcher doctor
-```
-
-确认通过后再切换：
-
-```bash
-workflow-switcher use <source> --target <target>
-```
-
-## 工作流根目录中的共享文件
-
-有些工作流目录不仅包含 skill 子目录，还包含共享说明、模板和脚本。Workflow Switcher 会自动识别这些根目录文件和目录，并一起切换到 target。
-
-会识别的共享项包括：
-
-```text
-README.md
-WORKFLOW.md
-WORKFLOW-DETAILS.md
-TEMPLATE-STANDARD.md
-.best-practices
-.scripts
-templates
-```
-
-例如你的 source 是：
-
-```text
-/Users/yangqy/workspace/seeyon-new/ai-toolkit/skills
-```
-
-切换时，里面的 skill 目录和这些共享项都会通过符号链接出现在 target 目录中。
-
-## 安全规则
-
-Workflow Switcher 只管理自己创建和记录的符号链接。
-
-它会在 target 目录中写入：
-
-```text
-.workflow-switcher.json
-```
-
-后续切换时，只会清理这个状态文件中记录的受控项。
-
-如果 target 目录里已经存在同名文件或目录，但不是 Workflow Switcher 管理的内容，切换会停止，并提示你手动处理，避免误删你的文件。
+卸载会删除 Workflow Switcher 自身的安装目录、命令入口和配置目录，不会删除你的真实工作流目录，也不会删除 Codex、Claude 等工具目录。
 
 ## 本地开发
 
-在仓库内直接运行：
+安装依赖：
+
+```bash
+npm install
+```
+
+运行 CLI：
 
 ```bash
 node bin/workflow-switcher.mjs help

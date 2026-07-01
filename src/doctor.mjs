@@ -8,7 +8,7 @@ import { assertWritableDir } from "./fs-utils.mjs";
 import { discoverSource, assertNoDuplicateNames } from "./scanner.mjs";
 import { assertSymlinkCapability } from "./symlink.mjs";
 import { readState } from "./state.mjs";
-import { failure, info, kv, pathText, success, warn } from "./output.mjs";
+import { banner, failure, pathText, section, success, table, warn } from "./output.mjs";
 
 /**
  * 执行诊断并返回结构化结果。
@@ -51,14 +51,28 @@ export function runDoctor(config, cfgPath) {
  * @param {Array} checks 诊断结果。
  */
 export function printDoctor(checks) {
-  info("Workflow Switcher Doctor");
+  banner("环境诊断");
+  section("检查结果");
+  table(
+    ["范围", "名称", "状态", "详情"],
+    checks.map((check) => [
+      check.scope,
+      check.name,
+      check.status,
+      check.message.includes("/") || check.message.includes("\\") ? pathText(check.message) : check.message,
+    ]),
+  );
+
+  const failed = checks.filter((check) => check.status === "FAIL");
+  if (failed.length === 0) {
+    success("未发现阻塞问题");
+    return;
+  }
+
+  section("处理建议");
   for (const check of checks) {
-    if (check.status === "OK") success(`${check.scope}/${check.name}`);
-    else if (check.status === "FAIL") failure(`${check.scope}/${check.name}`);
-    else if (check.status === "WARN") warn(`${check.scope}/${check.name}`);
-    else info(`${check.scope}/${check.name}`);
-    kv("详情", check.message.includes("/") || check.message.includes("\\") ? pathText(check.message) : check.message);
     if (check.status === "FAIL") {
+      failure(`${check.scope}/${check.name}`);
       // doctor 失败项直接附带处理方向，减少用户二次搜索成本。
       if (/符号链接|symlink|symbolic/i.test(check.message)) warn("处理方式: Windows 请开启 Developer Mode，或授予 Create symbolic links 权限。");
       else if (/不存在/.test(check.message)) warn("处理方式: 检查路径是否存在，必要时重新添加 source 或 target。");
