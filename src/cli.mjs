@@ -12,7 +12,7 @@ import { readState } from "./state.mjs";
 import { validateName } from "./validation.mjs";
 import { askConfirm, askMultiSelect, askSelect, askText, closePrompt, createPrompt } from "./prompt.mjs";
 import { printDoctor, runDoctor } from "./doctor.mjs";
-import { banner, commandList, errorKv, failure, info, kv, nameText, note, pathText, printResolution, section, spin, step, success, table, warn } from "./output.mjs";
+import { banner, commandList, errorKv, failure, info, kv, nameText, next, note, pathText, printResolution, section, spin, step, success, summary, table, warn } from "./output.mjs";
 
 /**
  * 校验 source 目录并打印扫描结果，保存配置前提前暴露路径和重复名称问题。
@@ -315,7 +315,8 @@ async function collectSetupDraft(rl, baseConfig, plan) {
     return config;
   }
 
-  guideStep("确认保存");
+  console.log("");
+  summary("确认保存");
   const summaryRows = [
     ...draftTargets.map((target) => ["工具目录", target.name, pathText(target.activeDir), "-"]),
     ...draftSources.map((source) => ["工作流", source.name, pathText(source.skillsDir), `${source.skills} skills / ${source.rootAdjuncts} 共享项`]),
@@ -335,8 +336,8 @@ async function collectSetupDraft(rl, baseConfig, plan) {
   saveConfig(config);
   success("配置已保存");
   kv("配置文件", pathText(configPath()));
-  info("建议先执行 workflow-switcher doctor 检查路径和软链接权限。");
-  info("检查通过后执行 workflow-switcher use 选择并切换工作流。");
+  next("建议先执行 workflow-switcher doctor 检查路径和软链接权限。");
+  next("检查通过后执行 workflow-switcher use 选择并切换工作流。");
   return config;
 }
 

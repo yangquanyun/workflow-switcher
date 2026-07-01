@@ -24,15 +24,15 @@
 初始化时会用选择菜单和确认步骤完成配置，保存前会展示汇总：
 
 ```text
-◆ 第 1 步：添加工具目录
-ℹ 请填写本机真实路径；不会自动识别或预置默认路径。
+🧭 第 1 步：添加工具目录
+ℹ️ 请填写本机真实路径；不会自动识别或预置默认路径。
 
-◆ 确认保存
+📋 确认保存
 类型      名称    路径                                      检测结果
 工具目录  codex   /Users/you/.codex/skills                  -
 工作流    V5      /Users/you/workspace/team-a/skills         12 skills / 3 共享项
 
-请选择是否保存以上配置
+🎯 请选择是否保存以上配置
   暂不保存，结束 setup
   保存配置并结束 setup
 ```
@@ -40,9 +40,9 @@
 切换失败时会同时给出原因和处理方式：
 
 ```text
-✖ 操作失败
+❌ 操作失败
   原因: 无法创建符号链接
-⚠ 处理方式: Windows 请开启 Developer Mode，或让管理员授予 Create symbolic links 权限，或以管理员身份运行终端。
+🔐 处理方式: Windows 请开启 Developer Mode，或让管理员授予 Create symbolic links 权限，或以管理员身份运行终端。
 ```
 
 ## 快速安装

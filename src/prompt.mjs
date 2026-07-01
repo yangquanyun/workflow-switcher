@@ -4,7 +4,7 @@
  */
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import { stdin, stdout } from "node:process";
-import { info, warn } from "./output.mjs";
+import { note, warn } from "./output.mjs";
 
 /**
  * 保留空上下文对象，兼容调用方原有参数位置。
@@ -75,9 +75,9 @@ export async function askSelect(_prompt, message, choices) {
     warn("没有可选择的选项。");
     return null;
   }
-  info("使用 ↑/↓ 选择，Enter 确认。");
+  note("使用 ↑/↓ 选择，Enter 确认。");
   return select({
-    message,
+    message: `🎯 ${message}`,
     choices: choices.map((choice) => ({ name: choice.label, value: choice.value })),
     pageSize: Math.max(choices.length, 3),
   });
@@ -96,9 +96,9 @@ export async function askMultiSelect(_prompt, message, choices) {
     warn("没有可选择的选项。");
     return [];
   }
-  info("使用 ↑/↓ 移动，Space 勾选，Enter 确认。");
+  note("使用 ↑/↓ 移动，Space 勾选，Enter 确认。");
   return checkbox({
-    message,
+    message: `🎯 ${message}`,
     choices: choices.map((choice) => ({ name: choice.label, value: choice.value, checked: true })),
     pageSize: Math.max(choices.length, 3),
     validate: (answer) => (answer.length > 0 ? true : "请至少选择一项"),

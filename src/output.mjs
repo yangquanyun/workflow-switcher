@@ -5,12 +5,23 @@
 import boxen from "boxen";
 import chalk from "chalk";
 import Table from "cli-table3";
-import figures from "figures";
 import ora from "ora";
 
 const accent = chalk.hex("#7dd3fc");
 const muted = chalk.dim;
 const brand = chalk.hex("#a7f3d0");
+const icons = {
+  launch: "🚀",
+  step: "🧭",
+  summary: "📋",
+  next: "👉",
+  success: "✅",
+  failure: "❌",
+  warn: "⚠️",
+  info: "ℹ️",
+  wait: "⏳",
+  security: "🔐",
+};
 
 /**
  * 判断是否应该启用动画 spinner，非 TTY 下输出稳定文本。
@@ -26,7 +37,7 @@ function spinnerEnabled() {
  */
 export function banner(subtitle = "切换团队工作流，保持 agent skills 干净可控") {
   console.log(
-    boxen(`${brand.bold("Workflow Switcher")}\n${muted(subtitle)}`, {
+    boxen(`${icons.launch} ${brand.bold("Workflow Switcher")}\n${muted(subtitle)}`, {
       padding: { top: 0, bottom: 0, left: 1, right: 1 },
       margin: { top: 0, bottom: 1 },
       borderColor: "cyan",
@@ -48,7 +59,7 @@ export function section(title) {
  * @param {string} message 提示文案。
  */
 export function success(message) {
-  console.log(`${chalk.green(figures.tick)} ${chalk.bold(message)}`);
+  console.log(`${icons.success} ${chalk.bold(message)}`);
 }
 
 /**
@@ -56,7 +67,7 @@ export function success(message) {
  * @param {string} message 提示文案。
  */
 export function failure(message) {
-  console.error(`${chalk.red(figures.cross)} ${chalk.bold(message)}`);
+  console.error(`${icons.failure} ${chalk.bold(message)}`);
 }
 
 /**
@@ -64,7 +75,7 @@ export function failure(message) {
  * @param {string} message 提示文案。
  */
 export function warn(message) {
-  console.log(`${chalk.yellow(figures.warning)} ${message}`);
+  console.log(`${icons.warn} ${message}`);
 }
 
 /**
@@ -72,15 +83,40 @@ export function warn(message) {
  * @param {string} message 提示文案。
  */
 export function info(message) {
-  console.log(`${chalk.cyan(figures.info)} ${message}`);
+  console.log(`${icons.info} ${message}`);
 }
 
 /**
  * 输出当前步骤信息。
  * @param {string} message 提示文案。
+ * @param {string} icon 场景图标。
  */
-export function step(message) {
-  console.log(`${chalk.blue(figures.pointer)} ${chalk.bold(message)}`);
+export function step(message, icon = icons.step) {
+  console.log(`${icon} ${chalk.bold(message)}`);
+}
+
+/**
+ * 输出汇总标题。
+ * @param {string} message 提示文案。
+ */
+export function summary(message) {
+  step(message, icons.summary);
+}
+
+/**
+ * 输出下一步提示。
+ * @param {string} message 提示文案。
+ */
+export function next(message) {
+  console.log(`${icons.next} ${message}`);
+}
+
+/**
+ * 输出权限处理提示。
+ * @param {string} message 提示文案。
+ */
+export function security(message) {
+  console.log(`${icons.security} ${message}`);
 }
 
 /**
@@ -164,7 +200,7 @@ export function commandList(rows) {
  */
 export function spin(text, task, successText = text) {
   if (!spinnerEnabled()) {
-    step(text);
+    step(text, icons.wait);
     const result = task();
     success(successText);
     return result;
@@ -187,7 +223,7 @@ export function spin(text, task, successText = text) {
 export function printResolution(error) {
   const message = error?.message || "";
   if (/符号链接|symlink|symbolic/i.test(message)) {
-    warn("处理方式: Windows 请开启 Developer Mode，或让管理员授予 Create symbolic links 权限，或以管理员身份运行终端。");
+    security("处理方式: Windows 请开启 Developer Mode，或让管理员授予 Create symbolic links 权限，或以管理员身份运行终端。");
     return;
   }
   if (/不存在/.test(message)) {
