@@ -57,6 +57,8 @@ curl -fsSL https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/
 
 Windows PowerShell：
 
+建议右键 PowerShell，选择“以管理员身份运行”后再执行。安装本身通常不需要管理员权限，但后续 `doctor` 和 `use` 需要创建软链接；如果没有开启 Developer Mode，也没有管理员权限，切换时可能会失败。
+
 ```powershell
 irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/install.ps1 | iex
 ```
@@ -233,7 +235,11 @@ templates
 
 ## Windows 软链接权限
 
-Windows 创建软链接需要系统权限。如果 `doctor` 或 `use` 提示无法创建符号链接，请选择一种方式处理：
+Windows 创建软链接需要系统权限。推荐在开始使用前先用“管理员 PowerShell”执行安装、`setup`、`doctor` 和 `use`。
+
+如果不想每次使用管理员终端，也可以开启 Developer Mode。否则安装可能成功，但 `doctor` 或 `use` 在创建软链接时会失败。
+
+如果已经遇到无法创建符号链接，请选择一种方式处理：
 
 ```text
 1. 开启 Windows Developer Mode。
