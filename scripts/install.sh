@@ -4,7 +4,7 @@ set -euo pipefail
 # macOS/Linux 安装脚本。by AI.Coding
 # 该脚本安装 Node 版本的 workflow-switcher，不发布 npm、不打包二进制。
 
-REPO_URL="${WORKFLOW_SWITCHER_REPO_URL:-https://github.com/yangquanyun/workflow-switcher-plugin/archive/refs/heads/main.tar.gz}"
+REPO_URL="${WORKFLOW_SWITCHER_REPO_URL:-https://github.com/yangquanyun/workflow-switcher/archive/refs/heads/main.tar.gz}"
 INSTALL_DIR="${WORKFLOW_SWITCHER_INSTALL_DIR:-$HOME/.workflow-switcher}"
 BIN_DIR="${WORKFLOW_SWITCHER_BIN_DIR:-$HOME/.local/bin}"
 

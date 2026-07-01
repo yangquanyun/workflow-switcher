@@ -3,7 +3,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$repoUrl = if ($env:WORKFLOW_SWITCHER_REPO_URL) { $env:WORKFLOW_SWITCHER_REPO_URL } else { "https://github.com/yangquanyun/workflow-switcher-plugin/archive/refs/heads/main.zip" }
+$repoUrl = if ($env:WORKFLOW_SWITCHER_REPO_URL) { $env:WORKFLOW_SWITCHER_REPO_URL } else { "https://github.com/yangquanyun/workflow-switcher/archive/refs/heads/main.zip" }
 $installDir = if ($env:WORKFLOW_SWITCHER_INSTALL_DIR) { $env:WORKFLOW_SWITCHER_INSTALL_DIR } else { Join-Path $HOME ".workflow-switcher" }
 $binDir = if ($env:WORKFLOW_SWITCHER_BIN_DIR) { $env:WORKFLOW_SWITCHER_BIN_DIR } else { Join-Path $HOME "bin" }
 

@@ -33,13 +33,13 @@ node -v
 macOS / Linux：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yangquanyun/workflow-switcher-plugin/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/install.sh | bash
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher-plugin/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/install.ps1 | iex
 ```
 
 安装完成后会自动进入初始化向导。
