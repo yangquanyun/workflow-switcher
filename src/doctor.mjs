@@ -14,7 +14,7 @@ import { banner, failure, pathText, section, success, table, warn } from "./outp
  * 执行诊断并返回结构化结果。
  * @param {object} config 配置对象。
  * @param {string} cfgPath 配置文件路径。
- * @returns {Array<{scope:string,name:string,status:string,message:string}>} 诊断结果。
+ * @returns {Array<{scope:string,name:string,status:string,message:string,currentSource?:string|null}>} 诊断结果。
  */
 export function runDoctor(config, cfgPath) {
   const checks = [];
@@ -37,7 +37,7 @@ export function runDoctor(config, cfgPath) {
       assertWritableDir(target.activeDir);
       assertSymlinkCapability(target.activeDir);
       const state = readState(target.activeDir);
-      checks.push({ scope: "target", name, status: "OK", message: `${target.activeDir}，当前 source: ${state.currentSource || "none"}` });
+      checks.push({ scope: "target", name, status: "OK", message: target.activeDir, currentSource: state.currentSource });
     } catch (error) {
       checks.push({ scope: "target", name, status: "FAIL", message: `${target.activeDir}: ${error.message}` });
     }
@@ -62,6 +62,18 @@ export function printDoctor(checks) {
       check.message.includes("/") || check.message.includes("\\") ? pathText(check.message) : check.message,
     ]),
   );
+
+  const targetChecks = checks.filter((check) => check.scope === "target" && check.status === "OK");
+  if (targetChecks.length > 0) {
+    section("当前工作流");
+    table(
+      ["工具目录", "状态"],
+      targetChecks.map((check) => [
+        check.name,
+        check.currentSource ? `正在使用工作流: ${check.currentSource}` : "未选择或使用工作流",
+      ]),
+    );
+  }
 
   const failed = checks.filter((check) => check.status === "FAIL");
   if (failed.length === 0) {

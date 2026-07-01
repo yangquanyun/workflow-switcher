@@ -490,7 +490,7 @@ function printCurrent(verbose = false) {
   const rows = [];
   for (const [name, target] of Object.entries(config.targets)) {
     const state = readState(target.activeDir);
-    rows.push([nameText(name), state.currentSource || "none", pathText(target.activeDir)]);
+    rows.push([nameText(name), state.currentSource || "未选择或使用工作流", pathText(target.activeDir)]);
   }
   section("当前状态");
   table(["工具", "当前工作流", "skills 目录"], rows);
