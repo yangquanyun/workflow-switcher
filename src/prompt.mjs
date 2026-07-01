@@ -39,14 +39,15 @@ function assertInteractiveTerminal() {
  */
 export async function askText(_prompt, message, defaultValue = "") {
   assertInteractiveTerminal();
-  return input({
-    message,
-    default: defaultValue || undefined,
-    validate: (value) => {
-      if ((value || defaultValue).trim()) return true;
-      return "输入不能为空";
-    },
-  }).then((value) => (value.trim() || defaultValue).trim());
+  while (true) {
+    const value = await input({
+      message,
+      default: defaultValue || undefined,
+    });
+    const trimmed = (value.trim() || defaultValue).trim();
+    if (trimmed) return trimmed;
+    warn("输入不能为空，请重新输入。");
+  }
 }
 
 /**
