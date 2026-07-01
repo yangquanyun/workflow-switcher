@@ -9,13 +9,13 @@ INSTALL_DIR="${WORKFLOW_SWITCHER_INSTALL_DIR:-$HOME/.workflow-switcher}"
 BIN_DIR="${WORKFLOW_SWITCHER_BIN_DIR:-$HOME/.local/bin}"
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "未检测到 Node.js，请先安装 Node.js 20.17+、22.13+ 或 23.5+。"
+  echo "未检测到 Node.js，请先安装 Node.js 20.17 或更高的 LTS 版本，推荐使用 Node.js 22 LTS。"
   exit 1
 fi
 
 NODE_VERSION="$(node -p "process.versions.node")"
 if ! node -e "const [major,minor,patch]=process.versions.node.split('.').map(Number); const supported=(major===20 && minor>=17) || (major===22 && minor>=13) || (major===23 && (minor>5 || (minor===5 && patch>=0))) || major>23; process.exit(supported ? 0 : 1)"; then
-  echo "当前 Node.js 版本为 $NODE_VERSION，workflow-switcher 需要 Node.js 20.17+、22.13+ 或 23.5+。"
+  echo "当前 Node.js 版本为 $NODE_VERSION，workflow-switcher 需要 Node.js 20.17 或更高的 LTS 版本，推荐使用 Node.js 22 LTS。"
   echo "处理方式: 请先升级 Node.js，然后重新执行安装命令。"
   exit 1
 fi
