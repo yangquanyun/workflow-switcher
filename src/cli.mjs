@@ -214,10 +214,21 @@ function toChoices(names) {
  */
 async function askContinue(rl, message) {
   const action = await askSelect(rl, message, [
-    { label: "否", value: "stop" },
     { label: "是", value: "continue" },
+    { label: "否", value: "stop" },
   ]);
   return action === "continue";
+}
+
+/**
+ * 将内置工具名称用于提示语展示，不改变配置中保存的 slug。
+ * @param {string} name target 名称。
+ * @returns {string} 展示名称。
+ */
+function targetPromptName(name) {
+  if (name === "codex") return "Codex";
+  if (name === "claude") return "Claude";
+  return name;
 }
 
 /**
@@ -232,8 +243,7 @@ async function promptTarget(rl) {
   ];
   const selected = await askSelect(rl, "请选择工具", choices);
   const name = selected === "__custom__" ? validateName(await askText(rl, "请输入工具名称"), "target") : selected;
-  note("请填写本机真实路径；不会自动识别或预置默认路径。");
-  const activeDir = await askText(rl, `请输入 ${name} 实际读取 skills 的目录`);
+  const activeDir = await askText(rl, `请输入 ${targetPromptName(name)} 对应的 skills 目录路径`);
   return { name, activeDir };
 }
 
@@ -262,8 +272,7 @@ async function interactiveAddTarget(config) {
  */
 async function promptSource(rl) {
   const name = validateName(await askText(rl, "请输入工作流名称"), "source");
-  note("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
-  const skillsDir = await askText(rl, "请输入工作流 skills 源目录");
+  const skillsDir = await askText(rl, "请输入工作流 skills 源目录路径");
   validateSource(skillsDir);
   return { name, skillsDir };
 }
@@ -314,8 +323,7 @@ async function collectSetupDraft(rl, baseConfig, plan) {
     let shouldAddSource = true;
     while (shouldAddSource) {
       const name = validateName(await askText(rl, "请输入工作流名称"), "source");
-      note("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
-      const skillsDir = await askText(rl, "请输入工作流 skills 源目录");
+      const skillsDir = await askText(rl, "请输入工作流 skills 源目录路径");
       const discovered = validateSource(skillsDir, { quiet: true });
       draftSources.push({ name, skillsDir, skills: discovered.skills.length, rootAdjuncts: discovered.rootAdjuncts.length });
       note(`工作流目录检测通过`);
@@ -330,15 +338,15 @@ async function collectSetupDraft(rl, baseConfig, plan) {
   }
 
   console.log("");
-  summary("确认保存");
+  summary("配置汇总");
   const summaryRows = [
     ...draftTargets.map((target) => ["工具目录", target.name, pathText(target.activeDir), "-"]),
     ...draftSources.map((source) => ["工作流", source.name, pathText(source.skillsDir), `${source.skills} skills / ${source.rootAdjuncts} 共享项`]),
   ];
   table(["类型", "名称", "路径", "检测结果"], summaryRows);
-  const saveAction = await askSelect(rl, "请选择是否保存以上配置", [
-    { label: "暂不保存，结束 setup", value: "cancel" },
-    { label: "保存配置并结束 setup", value: "save" },
+  const saveAction = await askSelect(rl, "是否保存以上配置", [
+    { label: "是", value: "save" },
+    { label: "否", value: "cancel" },
   ]);
   if (saveAction !== "save") {
     warn("已取消保存，现有配置未改变。");
