@@ -210,14 +210,12 @@ function toChoices(names) {
  * 询问是否继续追加同类配置，用选择菜单替代 Y/n，避免回车误触下一个输入校验。
  * @param {object} rl 交互上下文。
  * @param {string} message 提示文案。
- * @param {string} continueLabel 继续选项文案。
- * @param {string} stopLabel 停止选项文案。
  * @returns {Promise<boolean>} 是否继续。
  */
-async function askContinue(rl, message, continueLabel, stopLabel) {
+async function askContinue(rl, message) {
   const action = await askSelect(rl, message, [
-    { label: stopLabel, value: "stop" },
-    { label: continueLabel, value: "continue" },
+    { label: "否", value: "stop" },
+    { label: "是", value: "continue" },
   ]);
   return action === "continue";
 }
@@ -234,7 +232,7 @@ async function promptTarget(rl) {
   ];
   const selected = await askSelect(rl, "请选择工具", choices);
   const name = selected === "__custom__" ? validateName(await askText(rl, "请输入工具名称"), "target") : selected;
-  info("请填写本机真实路径；不会自动识别或预置默认路径。");
+  note("请填写本机真实路径；不会自动识别或预置默认路径。");
   const activeDir = await askText(rl, `请输入 ${name} 实际读取 skills 的目录`);
   return { name, activeDir };
 }
@@ -264,7 +262,7 @@ async function interactiveAddTarget(config) {
  */
 async function promptSource(rl) {
   const name = validateName(await askText(rl, "请输入工作流名称"), "source");
-  info("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
+  note("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
   const skillsDir = await askText(rl, "请输入工作流 skills 源目录");
   validateSource(skillsDir);
   return { name, skillsDir };
@@ -307,7 +305,7 @@ async function collectSetupDraft(rl, baseConfig, plan) {
       const target = await promptTarget(rl);
       draftTargets.push(target);
       note(`已记录工具目录: ${nameText(target.name)}  ${pathText(target.activeDir)}`);
-      shouldAddTarget = await askContinue(rl, "是否继续添加工具目录", "继续添加另一个工具目录", "不再添加工具目录");
+      shouldAddTarget = await askContinue(rl, "是否继续添加工具目录");
     }
   }
 
@@ -316,13 +314,13 @@ async function collectSetupDraft(rl, baseConfig, plan) {
     let shouldAddSource = true;
     while (shouldAddSource) {
       const name = validateName(await askText(rl, "请输入工作流名称"), "source");
-      info("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
+      note("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
       const skillsDir = await askText(rl, "请输入工作流 skills 源目录");
       const discovered = validateSource(skillsDir, { quiet: true });
       draftSources.push({ name, skillsDir, skills: discovered.skills.length, rootAdjuncts: discovered.rootAdjuncts.length });
       note(`工作流目录检测通过`);
       note(`已记录工作流: ${nameText(name)}  ${discovered.skills.length} skills / ${discovered.rootAdjuncts.length} 共享项`);
-      shouldAddSource = await askContinue(rl, "是否继续添加工作流", "继续添加另一个工作流", "不再添加工作流");
+      shouldAddSource = await askContinue(rl, "是否继续添加工作流");
     }
   }
 
