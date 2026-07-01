@@ -207,6 +207,22 @@ function toChoices(names) {
 }
 
 /**
+ * 询问是否继续追加同类配置，用选择菜单替代 Y/n，避免回车误触下一个输入校验。
+ * @param {object} rl 交互上下文。
+ * @param {string} message 提示文案。
+ * @param {string} continueLabel 继续选项文案。
+ * @param {string} stopLabel 停止选项文案。
+ * @returns {Promise<boolean>} 是否继续。
+ */
+async function askContinue(rl, message, continueLabel, stopLabel) {
+  const action = await askSelect(rl, message, [
+    { label: stopLabel, value: "stop" },
+    { label: continueLabel, value: "continue" },
+  ]);
+  return action === "continue";
+}
+
+/**
  * 根据内置名称或用户输入生成工具目录信息；不提供任何默认路径。
  * @param {object} rl 交互上下文。
  * @returns {Promise<{name:string,activeDir:string}>} target 信息。
@@ -291,7 +307,7 @@ async function collectSetupDraft(rl, baseConfig, plan) {
       const target = await promptTarget(rl);
       draftTargets.push(target);
       note(`已记录工具目录: ${nameText(target.name)}  ${pathText(target.activeDir)}`);
-      shouldAddTarget = await askConfirm(rl, "继续添加另一个工具目录？", false);
+      shouldAddTarget = await askContinue(rl, "是否继续添加工具目录", "继续添加另一个工具目录", "不再添加工具目录");
     }
   }
 
@@ -306,7 +322,7 @@ async function collectSetupDraft(rl, baseConfig, plan) {
       draftSources.push({ name, skillsDir, skills: discovered.skills.length, rootAdjuncts: discovered.rootAdjuncts.length });
       note(`工作流目录检测通过`);
       note(`已记录工作流: ${nameText(name)}  ${discovered.skills.length} skills / ${discovered.rootAdjuncts.length} 共享项`);
-      shouldAddSource = await askConfirm(rl, "继续添加另一个工作流？", false);
+      shouldAddSource = await askContinue(rl, "是否继续添加工作流", "继续添加另一个工作流", "不再添加工作流");
     }
   }
 
