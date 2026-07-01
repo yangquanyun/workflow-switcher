@@ -10,7 +10,7 @@ import { discoverSource, assertNoDuplicateNames } from "./scanner.mjs";
 import { resolveTargetNames, switchSource } from "./switcher.mjs";
 import { readState } from "./state.mjs";
 import { validateName } from "./validation.mjs";
-import { askConfirm, askMultiSelect, askSelect, askText, createPrompt } from "./prompt.mjs";
+import { askConfirm, askMultiSelect, askSelect, askText, closePrompt, createPrompt } from "./prompt.mjs";
 import { printDoctor, runDoctor } from "./doctor.mjs";
 import { errorKv, failure, info, kv, nameText, pathText, printResolution, step, success, warn } from "./output.mjs";
 
@@ -35,10 +35,10 @@ async function runMenu() {
   try {
     while (true) {
       const action = await askSelect(rl, "请选择操作", [
-        { label: "初始化 / 设置", value: "setup" },
-        { label: "添加 source", value: "source-add" },
-        { label: "添加 target", value: "target-add" },
-        { label: "切换 workflow", value: "use" },
+        { label: "初始化配置", value: "setup" },
+        { label: "添加工作流", value: "source-add" },
+        { label: "添加智能体目录", value: "target-add" },
+        { label: "切换工作流", value: "use" },
         { label: "查看状态", value: "status" },
         { label: "环境诊断", value: "doctor" },
         { label: "退出", value: "exit" },
@@ -46,7 +46,7 @@ async function runMenu() {
 
       if (action === "exit") return;
       if (action === "setup") {
-        rl.close();
+        closePrompt(rl);
         return runSetup();
       }
       if (action === "source-add") {
@@ -68,20 +68,16 @@ async function runMenu() {
           warn("暂无 source，请先添加。");
           continue;
         }
-        const sourceName = await askSelect(
-          rl,
-          "请选择 source",
-          sourceNames.map((name) => ({ label: name, value: name })),
-        );
-        rl.close();
+        const sourceName = await askSelect(rl, "请选择工作流", toChoices(sourceNames));
+        closePrompt(rl);
         return runUse(sourceName, { target: [] });
       }
       if (action === "status") printCurrent(true);
       if (action === "doctor") printDoctor(runDoctor(loadConfig(), configPath()));
     }
   } finally {
-    // readline close 可重复调用；这里保证异常时终端状态被释放。
-    rl.close();
+    // 统一交互上下文释放入口，便于 prompt 实现替换。
+    closePrompt(rl);
   }
 }
 
@@ -129,13 +125,22 @@ function parseArgs(argv) {
 }
 
 /**
- * 根据内置显示名称或用户输入生成 target 信息；不提供任何默认路径。
- * @param {readline.Interface} rl readline 实例。
+ * 将名称列表转换为交互选项，避免调用方重复构造 label/value。
+ * @param {string[]} names 名称列表。
+ * @returns {Array<{label:string,value:string}>} 交互选项。
+ */
+function toChoices(names) {
+  return names.map((name) => ({ label: name, value: name }));
+}
+
+/**
+ * 根据内置名称或用户输入生成 target 信息；不提供任何默认路径。
+ * @param {object} rl 交互上下文。
  * @returns {Promise<{name:string,activeDir:string}>} target 信息。
  */
 async function promptTarget(rl) {
   const choices = [
-    ...BUILTIN_TARGET_NAMES.map((name) => ({ label: name, value: name })),
+    ...toChoices(BUILTIN_TARGET_NAMES),
     { label: "自定义", value: "__custom__" },
   ];
   const selected = await askSelect(rl, "请选择 target 名称", choices);
@@ -155,13 +160,13 @@ async function interactiveAddTarget(config) {
     const target = await promptTarget(rl);
     return setTarget(config, target.name, target.activeDir);
   } finally {
-    rl.close();
+    closePrompt(rl);
   }
 }
 
 /**
- * 使用指定 readline 收集 source 信息。
- * @param {readline.Interface} rl readline 实例。
+ * 使用指定交互上下文收集 source 信息。
+ * @param {object} rl 交互上下文。
  * @returns {Promise<{name:string,skillsDir:string}>} source 信息。
  */
 async function promptSource(rl) {
@@ -182,7 +187,7 @@ async function interactiveAddSource(config) {
     const source = await promptSource(rl);
     return setSource(config, source.name, source.skillsDir);
   } finally {
-    rl.close();
+    closePrompt(rl);
   }
 }
 
@@ -205,7 +210,7 @@ async function runSetup() {
     success("配置已保存");
     kv("配置文件", pathText(configPath()));
   } finally {
-    rl.close();
+    closePrompt(rl);
   }
 }
 
@@ -247,13 +252,27 @@ async function selectTargetsForUse(config, requested) {
   if (names.length <= 1) return names;
   const rl = createPrompt();
   try {
-    return askMultiSelect(
-      rl,
-      "请选择要切换的 target",
-      names.map((name) => ({ label: name, value: name })),
-    );
+    return askMultiSelect(rl, "请选择要切换的 target", toChoices(names));
   } finally {
-    rl.close();
+    closePrompt(rl);
+  }
+}
+
+/**
+ * 选择 use 命令的 source；命令未传 source 时进入交互选择。
+ * @param {object} config 配置对象。
+ * @param {string} requested 请求 source。
+ * @returns {Promise<string>} source 名称。
+ */
+async function selectSourceForUse(config, requested) {
+  if (requested) return requested;
+  const names = Object.keys(config.sources);
+  if (names.length === 0) throw new Error("未配置可用 source，请先执行 workflow-switcher source add");
+  const rl = createPrompt();
+  try {
+    return askSelect(rl, "请选择工作流", toChoices(names));
+  } finally {
+    closePrompt(rl);
   }
 }
 
@@ -263,12 +282,12 @@ async function selectTargetsForUse(config, requested) {
  * @param {object} options 命令选项。
  */
 async function runUse(sourceName, options) {
-  if (!sourceName) throw new Error("use 需要指定 source 名称");
   const config = loadConfig();
+  const selectedSourceName = await selectSourceForUse(config, sourceName);
   const targetNames = await selectTargetsForUse(config, options.target);
   if (targetNames.length === 0) throw new Error("未配置可用 target");
-  step(`开始切换到 ${sourceName}`);
-  const results = switchSource(config, sourceName, targetNames);
+  step(`开始切换到 ${selectedSourceName}`);
+  const results = switchSource(config, selectedSourceName, targetNames);
   for (const result of results) {
     success(`[${result.targetName}] 已切换到 ${result.sourceName}`);
     kv("active 目录", pathText(result.activeDir));
