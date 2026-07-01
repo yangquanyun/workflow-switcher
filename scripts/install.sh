@@ -25,7 +25,12 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 curl -fsSL "$REPO_URL" -o "$TMP_DIR/workflow-switcher.tar.gz"
 tar -xzf "$TMP_DIR/workflow-switcher.tar.gz" -C "$TMP_DIR"
-SRC_DIR="$(find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+ENTRY_FILE="$(find "$TMP_DIR" -path "*/bin/workflow-switcher.mjs" -type f | head -n 1)"
+if [ -z "$ENTRY_FILE" ]; then
+  echo "安装包结构无效：未找到 bin/workflow-switcher.mjs"
+  exit 1
+fi
+SRC_DIR="$(dirname "$(dirname "$ENTRY_FILE")")"
 
 rm -rf "$INSTALL_DIR/app"
 mkdir -p "$INSTALL_DIR/app"
@@ -43,4 +48,4 @@ chmod +x "$BIN_DIR/workflow-switcher"
 
 echo "workflow-switcher 已安装到 $BIN_DIR/workflow-switcher"
 echo "如果命令不可用，请把 $BIN_DIR 加入 PATH。"
-"$BIN_DIR/workflow-switcher" setup
+echo "下一步请执行：$BIN_DIR/workflow-switcher setup"

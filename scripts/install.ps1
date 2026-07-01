@@ -25,7 +25,11 @@ try {
   $zipPath = Join-Path $tmpDir "workflow-switcher.zip"
   Invoke-WebRequest -Uri $repoUrl -OutFile $zipPath
   Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
-  $srcDir = Get-ChildItem -Path $tmpDir -Directory | Select-Object -First 1
+  $entryFile = Get-ChildItem -Path $tmpDir -Recurse -File -Filter "workflow-switcher.mjs" | Where-Object { $_.FullName -match "[\\/]bin[\\/]workflow-switcher\.mjs$" } | Select-Object -First 1
+  if (-not $entryFile) {
+    Write-Error "安装包结构无效：未找到 bin/workflow-switcher.mjs"
+  }
+  $srcDir = $entryFile.Directory.Parent
   $appDir = Join-Path $installDir "app"
   if (Test-Path $appDir) { Remove-Item -Recurse -Force $appDir }
   New-Item -ItemType Directory -Force -Path $appDir | Out-Null
@@ -40,7 +44,7 @@ try {
 
   Write-Host "workflow-switcher 已安装到 $cmdPath"
   Write-Host "如果命令不可用，请把 $binDir 加入 PATH。"
-  & $cmdPath setup
+  Write-Host "下一步请执行：$cmdPath setup"
 }
 finally {
   Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue

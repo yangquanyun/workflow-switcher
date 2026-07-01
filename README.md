@@ -42,7 +42,7 @@ Windows PowerShell：
 irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/install.ps1 | iex
 ```
 
-安装完成后会自动进入初始化向导。
+安装完成后，按提示执行 `workflow-switcher setup` 进入初始化向导。
 
 如果安装后提示找不到 `workflow-switcher` 命令，请把安装脚本提示的 bin 目录加入 `PATH`。
 
