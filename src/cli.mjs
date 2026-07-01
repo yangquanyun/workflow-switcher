@@ -53,6 +53,26 @@ function guideStep(title) {
 }
 
 /**
+ * 判断配置中是否已有工作流或工具目录。
+ * @param {object} config 配置对象。
+ * @returns {boolean} 是否已有配置。
+ */
+function hasAnyConfig(config) {
+  return Object.keys(config.targets).length > 0 || Object.keys(config.sources).length > 0;
+}
+
+/**
+ * 展示已有配置，帮助用户判断下一步是使用、追加还是重配。
+ * @param {object} config 配置对象。
+ */
+function printSetupOverview(config) {
+  section("已有配置");
+  const targetRows = Object.entries(config.targets).map(([name, target]) => ["工具目录", nameText(name), pathText(target.activeDir)]);
+  const sourceRows = Object.entries(config.sources).map(([name, source]) => ["工作流", nameText(name), pathText(source.skillsDir)]);
+  table(["类型", "名称", "路径"], [...targetRows, ...sourceRows]);
+}
+
+/**
  * 无参数主菜单，适合作为脚手架入口。
  */
 async function runMenu() {
@@ -233,28 +253,31 @@ async function interactiveAddSource(config) {
 }
 
 /**
- * setup 向导：分步骤收集工具目录和工作流，所有路径由用户自定义。
+ * 按确认式向导收集变更，保存前统一展示汇总表。
+ * @param {object} rl 交互上下文。
+ * @param {object} baseConfig 基础配置。
+ * @param {{target:boolean,source:boolean}} plan 收集计划。
+ * @returns {Promise<object>} 保存后的配置。
  */
-async function runSetup() {
-  let config = loadConfig();
-  const rl = createPrompt();
-  try {
-    banner("初始化本机工作流切换配置");
-    info("先配置工具读取 skills 的目录，再配置可切换的工作流目录。");
-    const draftTargets = [];
-    const draftSources = [];
+async function collectSetupDraft(rl, baseConfig, plan) {
+  let config = baseConfig;
+  const draftTargets = [];
+  const draftSources = [];
 
+  if (plan.target) {
     guideStep("第 1 步：添加工具目录");
-    let shouldAddTarget = Object.keys(config.targets).length === 0 || await askConfirm(rl, "添加或更新工具目录？", false);
+    let shouldAddTarget = true;
     while (shouldAddTarget) {
       const target = await promptTarget(rl);
       draftTargets.push(target);
       success(`已记录工具目录: ${target.name}  ${pathText(target.activeDir)}`);
       shouldAddTarget = await askConfirm(rl, "继续添加另一个工具目录？", false);
     }
+  }
 
+  if (plan.source) {
     guideStep("第 2 步：添加工作流");
-    let shouldAddSource = Object.keys(config.sources).length === 0 || await askConfirm(rl, "添加或更新工作流？", false);
+    let shouldAddSource = true;
     while (shouldAddSource) {
       const name = validateName(await askText(rl, "请输入工作流名称"), "source");
       info("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
@@ -264,31 +287,80 @@ async function runSetup() {
       success(`已记录工作流: ${name}  ${discovered.skills.length} skills / ${discovered.rootAdjuncts.length} 共享项`);
       shouldAddSource = await askConfirm(rl, "继续添加另一个工作流？", false);
     }
+  }
 
-    if (draftTargets.length === 0 && draftSources.length === 0) {
-      warn("没有新增或更新任何配置。");
+  if (draftTargets.length === 0 && draftSources.length === 0) {
+    warn("没有新增或更新任何配置。");
+    return config;
+  }
+
+  guideStep("确认保存");
+  const summaryRows = [
+    ...draftTargets.map((target) => ["工具目录", target.name, pathText(target.activeDir), "-"]),
+    ...draftSources.map((source) => ["工作流", source.name, pathText(source.skillsDir), `${source.skills} skills / ${source.rootAdjuncts} 共享项`]),
+  ];
+  table(["类型", "名称", "路径", "检测结果"], summaryRows);
+  const shouldSave = await askConfirm(rl, "保存以上配置？", true);
+  if (!shouldSave) {
+    warn("已取消保存，现有配置未改变。");
+    return config;
+  }
+
+  for (const target of draftTargets) config = setTarget(config, target.name, target.activeDir);
+  for (const source of draftSources) config = setSource(config, source.name, source.skillsDir);
+  saveConfig(config);
+  success("配置已保存");
+  kv("配置文件", pathText(configPath()));
+  info("建议先执行 workflow-switcher doctor 检查路径和软链接权限。");
+  info("检查通过后执行 workflow-switcher use 选择并切换工作流。");
+  return config;
+}
+
+/**
+ * setup 向导：首次初始化直接收集；已有配置时先给出维护菜单。
+ */
+async function runSetup() {
+  let config = loadConfig();
+  const rl = createPrompt();
+  try {
+    banner("初始化本机工作流切换配置");
+    if (!hasAnyConfig(config)) {
+      info("先配置工具读取 skills 的目录，再配置可切换的工作流目录。");
+      await collectSetupDraft(rl, config, { target: true, source: true });
       return;
     }
 
-    guideStep("第 3 步：确认保存");
-    const summaryRows = [
-      ...draftTargets.map((target) => ["工具目录", target.name, pathText(target.activeDir), "-"]),
-      ...draftSources.map((source) => ["工作流", source.name, pathText(source.skillsDir), `${source.skills} skills / ${source.rootAdjuncts} 共享项`]),
-    ];
-    table(["类型", "名称", "路径", "检测结果"], summaryRows);
-    const shouldSave = await askConfirm(rl, "保存以上配置？", true);
-    if (!shouldSave) {
-      warn("已取消保存，现有配置未改变。");
+    printSetupOverview(config);
+    const action = await askSelect(rl, "请选择下一步", [
+      { label: "继续使用现有配置", value: "keep" },
+      { label: "添加或更新工具目录", value: "target" },
+      { label: "添加或更新工作流", value: "source" },
+      { label: "重新配置", value: "reset" },
+      { label: "退出", value: "exit" },
+    ]);
+
+    if (action === "keep") {
+      success("保留现有配置");
+      info("可以执行 workflow-switcher doctor 检查环境，或执行 workflow-switcher use 切换工作流。");
       return;
     }
-
-    for (const target of draftTargets) config = setTarget(config, target.name, target.activeDir);
-    for (const source of draftSources) config = setSource(config, source.name, source.skillsDir);
-    saveConfig(config);
-    success("配置已保存");
-    kv("配置文件", pathText(configPath()));
-    info("建议先执行 workflow-switcher doctor 检查路径和软链接权限。");
-    info("检查通过后执行 workflow-switcher use 选择并切换工作流。");
+    if (action === "exit") return;
+    if (action === "target") {
+      await collectSetupDraft(rl, config, { target: true, source: false });
+      return;
+    }
+    if (action === "source") {
+      await collectSetupDraft(rl, config, { target: false, source: true });
+      return;
+    }
+    if (action === "reset") {
+      const confirmed = await askConfirm(rl, "重新配置会覆盖当前配置，是否继续？", false);
+      if (!confirmed) {
+        warn("已取消重新配置，现有配置未改变。");
+        return;
+      }
+      await collectSetupDraft(rl, { version: config.version, sources: {}, targets: {} }, { target: true, source: true });
+    }
   } finally {
     closePrompt(rl);
   }
