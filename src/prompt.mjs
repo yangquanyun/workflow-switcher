@@ -3,7 +3,8 @@
  * by AI.Coding
  */
 import { checkbox, confirm, input, select } from "@inquirer/prompts";
-import { warn } from "./output.mjs";
+import { stdin, stdout } from "node:process";
+import { info, warn } from "./output.mjs";
 
 /**
  * 保留空上下文对象，兼容调用方原有参数位置。
@@ -22,6 +23,14 @@ export function closePrompt(_prompt) {
 }
 
 /**
+ * 确认当前终端支持交互式选择，避免在非 TTY 环境中静默使用默认项。
+ */
+function assertInteractiveTerminal() {
+  if (stdin.isTTY && stdout.isTTY) return;
+  throw new Error("当前终端不支持交互选择，请在真实终端中运行 workflow-switcher setup。");
+}
+
+/**
  * 询问文本输入，空值且无默认值时原地重问。
  * @param {object} _prompt 交互上下文。
  * @param {string} message 提示文案。
@@ -29,6 +38,7 @@ export function closePrompt(_prompt) {
  * @returns {Promise<string>} 用户输入。
  */
 export async function askText(_prompt, message, defaultValue = "") {
+  assertInteractiveTerminal();
   return input({
     message,
     default: defaultValue || undefined,
@@ -47,6 +57,7 @@ export async function askText(_prompt, message, defaultValue = "") {
  * @returns {Promise<boolean>} 是否确认。
  */
 export async function askConfirm(_prompt, message, defaultValue = true) {
+  assertInteractiveTerminal();
   return confirm({ message, default: defaultValue });
 }
 
@@ -58,13 +69,16 @@ export async function askConfirm(_prompt, message, defaultValue = true) {
  * @returns {Promise<string>} 选中值。
  */
 export async function askSelect(_prompt, message, choices) {
+  assertInteractiveTerminal();
   if (choices.length === 0) {
     warn("没有可选择的选项。");
     return null;
   }
+  info("使用 ↑/↓ 选择，Enter 确认。");
   return select({
     message,
     choices: choices.map((choice) => ({ name: choice.label, value: choice.value })),
+    pageSize: Math.max(choices.length, 3),
   });
 }
 
@@ -76,13 +90,16 @@ export async function askSelect(_prompt, message, choices) {
  * @returns {Promise<string[]>} 选中值列表。
  */
 export async function askMultiSelect(_prompt, message, choices) {
+  assertInteractiveTerminal();
   if (choices.length === 0) {
     warn("没有可选择的选项。");
     return [];
   }
+  info("使用 ↑/↓ 移动，Space 勾选，Enter 确认。");
   return checkbox({
     message,
     choices: choices.map((choice) => ({ name: choice.label, value: choice.value, checked: true })),
+    pageSize: Math.max(choices.length, 3),
     validate: (answer) => (answer.length > 0 ? true : "请至少选择一项"),
   });
 }

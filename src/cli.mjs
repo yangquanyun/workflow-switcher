@@ -46,7 +46,7 @@ async function runMenu() {
       const action = await askSelect(rl, "请选择操作", [
         { label: "初始化配置", value: "setup" },
         { label: "添加工作流", value: "source-add" },
-        { label: "添加智能体目录", value: "target-add" },
+        { label: "添加工具目录", value: "target-add" },
         { label: "切换工作流", value: "use" },
         { label: "查看状态", value: "status" },
         { label: "环境诊断", value: "doctor" },
@@ -68,7 +68,7 @@ async function runMenu() {
         const target = await promptTarget(rl);
         let config = setTarget(loadConfig(), target.name, target.activeDir);
         saveConfig(config);
-        success("智能体目录已保存");
+        success("工具目录已保存");
       }
       if (action === "use") {
         const config = loadConfig();
@@ -98,21 +98,21 @@ function printHelp() {
 workflow-switcher <命令> [参数]
 
 命令:
-  setup                         交互式初始化工作流和智能体目录
+  setup                         交互式初始化工作流和工具目录
   source add [名称] [路径]       添加工作流
   source list                   查看工作流列表
   source remove <名称>          删除工作流配置
-  target add [名称] [路径]       添加智能体目录
-  target list                   查看智能体目录列表
-  target remove <名称>          删除智能体目录配置
+  target add [名称] [路径]       添加工具目录
+  target list                   查看工具目录列表
+  target remove <名称>          删除工具目录配置
   use [source]                  切换工作流，不传 source 时进入选择
-  current                       查看当前智能体目录状态
+  current                       查看当前工具目录状态
   status                        查看配置和当前状态
   doctor                        诊断配置、路径和 symlink 权限
   help                          显示帮助
 
 选项:
-  --target <名称|all>           指定 use 的智能体目录，可重复
+  --target <名称|all>           指定 use 的工具目录，可重复
 `.trim());
 }
 
@@ -143,7 +143,7 @@ function toChoices(names) {
 }
 
 /**
- * 根据内置名称或用户输入生成智能体目录信息；不提供任何默认路径。
+ * 根据内置名称或用户输入生成工具目录信息；不提供任何默认路径。
  * @param {object} rl 交互上下文。
  * @returns {Promise<{name:string,activeDir:string}>} target 信息。
  */
@@ -152,11 +152,10 @@ async function promptTarget(rl) {
     ...toChoices(BUILTIN_TARGET_NAMES),
     { label: "自定义", value: "__custom__" },
   ];
-  const selected = await askSelect(rl, "请选择要关联的智能体", choices);
-  const name = selected === "__custom__" ? validateName(await askText(rl, "请输入智能体名称"), "target") : selected;
-  info(`${name} 的 skills 目录必须填写你本机真实路径，工具不会预置或自动猜测。`);
-  info("这个目录是智能体实际读取 skills 的位置，后续切换会在这里创建软链接。");
-  const activeDir = await askText(rl, `请输入 ${name} 的 skills 目录`);
+  const selected = await askSelect(rl, "请选择工具", choices);
+  const name = selected === "__custom__" ? validateName(await askText(rl, "请输入工具名称"), "target") : selected;
+  info("请填写本机真实路径；不会自动识别或预置默认路径。");
+  const activeDir = await askText(rl, `请输入 ${name} 实际读取 skills 的目录`);
   return { name, activeDir };
 }
 
@@ -168,9 +167,9 @@ async function promptTarget(rl) {
 async function interactiveAddTarget(config) {
   const rl = createPrompt();
   try {
-    guideStep("添加智能体目录");
+    guideStep("添加工具目录");
     const target = await promptTarget(rl);
-    success(`已添加智能体目录: ${target.name}`);
+    success(`已添加工具目录: ${target.name}`);
     kv("skills 目录", pathText(target.activeDir));
     return setTarget(config, target.name, target.activeDir);
   } finally {
@@ -210,29 +209,33 @@ async function interactiveAddSource(config) {
 }
 
 /**
- * setup 向导：分步骤收集智能体目录和工作流，所有路径由用户自定义。
+ * setup 向导：分步骤收集工具目录和工作流，所有路径由用户自定义。
  */
 async function runSetup() {
   let config = loadConfig();
   const rl = createPrompt();
   try {
     success("开始初始化 Workflow Switcher");
-    info("你需要先添加智能体读取 skills 的目录，再添加可切换的工作流目录。");
+    info("先配置工具读取 skills 的目录，再配置可切换的工作流目录。");
 
-    guideStep("第 1 步：添加智能体目录");
-    while (await askConfirm(rl, "是否添加智能体目录？", Object.keys(config.targets).length === 0)) {
+    guideStep("第 1 步：添加工具目录");
+    let shouldAddTarget = Object.keys(config.targets).length === 0 || await askConfirm(rl, "添加或更新工具目录？", false);
+    while (shouldAddTarget) {
       const target = await promptTarget(rl);
       config = setTarget(config, target.name, target.activeDir);
-      success(`已添加智能体目录: ${target.name}`);
+      success(`已添加工具目录: ${target.name}`);
       kv("skills 目录", pathText(target.activeDir));
+      shouldAddTarget = await askConfirm(rl, "继续添加另一个工具目录？", false);
     }
 
     guideStep("第 2 步：添加工作流");
-    while (await askConfirm(rl, "是否添加工作流？", Object.keys(config.sources).length === 0)) {
+    let shouldAddSource = Object.keys(config.sources).length === 0 || await askConfirm(rl, "添加或更新工作流？", false);
+    while (shouldAddSource) {
       const source = await promptSource(rl);
       config = setSource(config, source.name, source.skillsDir);
       success(`已添加工作流: ${source.name}`);
       kv("skills 源目录", pathText(source.skillsDir));
+      shouldAddSource = await askConfirm(rl, "继续添加另一个工作流？", false);
     }
 
     saveConfig(config);
@@ -265,9 +268,9 @@ function printSources(config) {
  */
 function printTargets(config) {
   const entries = Object.entries(config.targets);
-  if (entries.length === 0) return warn("暂无智能体目录，请执行 workflow-switcher target add");
+  if (entries.length === 0) return warn("暂无工具目录，请执行 workflow-switcher target add");
   for (const [name, target] of entries) {
-    success(`智能体目录 ${nameText(name)}`);
+    success(`工具目录 ${nameText(name)}`);
     kv("skills 目录", pathText(target.activeDir));
   }
 }
@@ -284,7 +287,7 @@ async function selectTargetsForUse(config, requested) {
   if (names.length <= 1) return names;
   const rl = createPrompt();
   try {
-    return askMultiSelect(rl, "请选择要切换的智能体目录", toChoices(names));
+    return askMultiSelect(rl, "请选择要切换的工具目录", toChoices(names));
   } finally {
     closePrompt(rl);
   }
@@ -317,7 +320,7 @@ async function runUse(sourceName, options) {
   const config = loadConfig();
   const selectedSourceName = await selectSourceForUse(config, sourceName);
   const targetNames = await selectTargetsForUse(config, options.target);
-  if (targetNames.length === 0) throw new Error("未配置可用智能体目录");
+  if (targetNames.length === 0) throw new Error("未配置可用工具目录");
   step(`开始切换到 ${selectedSourceName}`);
   const results = switchSource(config, selectedSourceName, targetNames);
   for (const result of results) {
@@ -346,12 +349,12 @@ function printCurrent(verbose = false) {
     printTargets(config);
   }
   if (Object.keys(config.targets).length === 0) {
-    warn("暂无智能体目录，请先执行 workflow-switcher target add");
+    warn("暂无工具目录，请先执行 workflow-switcher target add");
     return;
   }
   for (const [name, target] of Object.entries(config.targets)) {
     const state = readState(target.activeDir);
-    info(`智能体目录 ${name}`);
+    info(`工具目录 ${name}`);
     kv("当前工作流", state.currentSource || "none");
     kv("skills 目录", pathText(target.activeDir));
   }
@@ -391,13 +394,13 @@ export async function main(argv = []) {
       if (sub === "add") {
         config = name && dir ? setTarget(config, name, dir) : await interactiveAddTarget(config);
         saveConfig(config);
-        return success(`智能体目录已保存: ${name || "(交互输入)"}`);
+        return success(`工具目录已保存: ${name || "(交互输入)"}`);
       }
       if (sub === "list") return printTargets(config);
       if (sub === "remove") {
         config = removeTarget(config, name);
         saveConfig(config);
-        return success(`智能体目录已删除: ${name}`);
+        return success(`工具目录已删除: ${name}`);
       }
     }
 
@@ -411,9 +414,10 @@ export async function main(argv = []) {
 
     throw new Error(`未知命令: ${parsed.command}`);
   } catch (error) {
+    const message = /force closed the prompt|SIGINT/i.test(error.message) ? "用户取消了当前操作。" : error.message;
     failure("操作失败");
-    errorKv("原因", error.message);
-    printResolution(error);
+    errorKv("原因", message);
+    printResolution(new Error(message));
     process.exitCode = 1;
   }
 }

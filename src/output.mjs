@@ -102,5 +102,13 @@ export function printResolution(error) {
     warn("处理方式: 先执行 workflow-switcher setup，或使用 source add / target add 补充配置后重试。");
     return;
   }
+  if (/不支持交互选择/.test(message)) {
+    warn("处理方式: 请在可交互的真实终端中执行 workflow-switcher setup，不要通过管道或后台任务运行。");
+    return;
+  }
+  if (/用户取消/.test(message)) {
+    warn("处理方式: 如需继续配置，请重新执行 workflow-switcher setup。");
+    return;
+  }
   warn("处理方式: 可执行 workflow-switcher doctor 查看配置、路径和 symlink 权限状态。");
 }
