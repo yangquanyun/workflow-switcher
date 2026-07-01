@@ -44,7 +44,23 @@ irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts
 
 安装完成后，按提示执行 `workflow-switcher setup` 进入初始化向导。
 
-如果安装后提示找不到 `workflow-switcher` 命令，请把安装脚本提示的 bin 目录加入 `PATH`。
+安装成功后会看到安装位置、命令入口和下一步命令。如果当前终端还不能直接执行 `workflow-switcher`，安装脚本会给出可复制的 PATH 处理方式，也会给出完整路径形式的初始化命令。
+
+## 一键卸载
+
+macOS / Linux：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/uninstall.sh | bash
+```
+
+Windows PowerShell：
+
+```powershell
+irm https://raw.githubusercontent.com/yangquanyun/workflow-switcher/main/scripts/uninstall.ps1 | iex
+```
+
+卸载会删除 Workflow Switcher 自身的安装目录、命令入口和配置目录，不会删除你的真实工作流目录，也不会删除 codex、claude 等智能体的 skills 目录。
 
 ## 第一次使用
 
