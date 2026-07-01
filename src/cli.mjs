@@ -144,9 +144,15 @@ function printHelp() {
     ["命令", "说明"],
     [
       ["setup", "交互式初始化工作流和工具目录"],
+      ["workflow add [名称] [路径]", "添加工作流，等同于 source add"],
+      ["workflow list", "查看工作流列表，等同于 source list"],
+      ["workflow remove <名称>", "删除工作流配置，等同于 source remove"],
       ["source add [名称] [路径]", "添加工作流"],
       ["source list", "查看工作流列表"],
       ["source remove <名称>", "删除工作流配置"],
+      ["tool add [名称] [路径]", "添加工具目录，等同于 target add"],
+      ["tool list", "查看工具目录列表，等同于 target list"],
+      ["tool remove <名称>", "删除工具目录配置，等同于 target remove"],
       ["target add [名称] [路径]", "添加工具目录"],
       ["target list", "查看工具目录列表"],
       ["target remove <名称>", "删除工具目录配置"],
@@ -175,6 +181,17 @@ function parseArgs(argv) {
     else args.push(arg);
   }
   return { command: args[0] || null, args: args.slice(1), options };
+}
+
+/**
+ * 将更贴近日常语义的别名映射到内部命令，保留旧命令兼容性。
+ * @param {string|null} command 原始命令。
+ * @returns {string|null} 规范命令。
+ */
+function normalizeCommand(command) {
+  if (command === "workflow") return "source";
+  if (command === "tool") return "target";
+  return command;
 }
 
 /**
@@ -354,7 +371,7 @@ async function runSetup() {
       return;
     }
     if (action === "reset") {
-      const confirmed = await askConfirm(rl, "重新配置会覆盖当前配置，是否继续？", false);
+      const confirmed = await askConfirm(rl, "重新配置只会覆盖 workflow-switcher 配置，不会删除真实工作流目录或工具目录。是否继续？", false);
       if (!confirmed) {
         warn("已取消重新配置，现有配置未改变。");
         return;
@@ -485,12 +502,13 @@ function printCurrent(verbose = false) {
  */
 export async function main(argv = []) {
   const parsed = parseArgs(argv);
+  const command = normalizeCommand(parsed.command);
   try {
-    if (!parsed.command) return await runMenu();
-    if (parsed.command === "help" || parsed.command === "--help" || parsed.command === "-h") return printHelp();
-    if (parsed.command === "setup") return await runSetup();
+    if (!command) return await runMenu();
+    if (command === "help" || command === "--help" || command === "-h") return printHelp();
+    if (command === "setup") return await runSetup();
 
-    if (parsed.command === "source") {
+    if (command === "source") {
       const [sub, name, dir] = parsed.args;
       let config = loadConfig();
       if (sub === "add") {
@@ -507,7 +525,7 @@ export async function main(argv = []) {
       }
     }
 
-    if (parsed.command === "target") {
+    if (command === "target") {
       const [sub, name, dir] = parsed.args;
       let config = loadConfig();
       if (sub === "add") {
@@ -523,10 +541,10 @@ export async function main(argv = []) {
       }
     }
 
-    if (parsed.command === "use") return await runUse(parsed.args[0], parsed.options);
-    if (parsed.command === "current") return printCurrent(false);
-    if (parsed.command === "status") return printCurrent(true);
-    if (parsed.command === "doctor") {
+    if (command === "use") return await runUse(parsed.args[0], parsed.options);
+    if (command === "current") return printCurrent(false);
+    if (command === "status") return printCurrent(true);
+    if (command === "doctor") {
       const config = loadConfig();
       return printDoctor(spin("检查配置、路径和软链接权限", () => runDoctor(config, configPath()), "诊断完成"));
     }

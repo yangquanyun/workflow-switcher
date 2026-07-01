@@ -2,15 +2,12 @@
  * 统一终端输出样式。
  * by AI.Coding
  */
-import { createRequire } from "node:module";
 import boxen from "boxen";
 import chalk from "chalk";
 import Table from "cli-table3";
 import figures from "figures";
 import ora from "ora";
 
-const require = createRequire(import.meta.url);
-const { Line } = require("clui");
 const accent = chalk.hex("#7dd3fc");
 const muted = chalk.dim;
 const brand = chalk.hex("#a7f3d0");
@@ -139,12 +136,13 @@ export function table(head, rows) {
 }
 
 /**
- * 使用 clui 输出紧凑命令清单。
+ * 输出紧凑命令清单；固定命令列宽，避免为少量帮助文本引入额外依赖。
  * @param {Array<[string,string]>} rows 命令和说明。
  */
 export function commandList(rows) {
+  const commandWidth = Math.max(...rows.map(([command]) => command.length), 0) + 4;
   for (const [command, description] of rows) {
-    console.log(new Line().padding(2).column(chalk.bold(command), 34).column(muted(description), 40).contents().trimEnd());
+    console.log(`  ${chalk.bold(command.padEnd(commandWidth))}${muted(description)}`);
   }
 }
 

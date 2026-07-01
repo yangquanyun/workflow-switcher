@@ -6,6 +6,41 @@
 
 支持 macOS 和 Windows。只使用软链接，不会自动 copy，也不会降级为 junction。
 
+## 效果预览
+
+安装完成后会明确告诉你安装位置、命令入口和下一步操作：
+
+```text
+✅ Workflow Switcher 安装完成
+
+安装位置
+  应用目录: /Users/you/.workflow-switcher/app
+  命令入口: /Users/you/.local/bin/workflow-switcher
+
+下一步
+  workflow-switcher setup
+```
+
+初始化时会用选择菜单和确认步骤完成配置，保存前会展示汇总：
+
+```text
+◆ 第 1 步：添加工具目录
+ℹ 请填写本机真实路径；不会自动识别或预置默认路径。
+
+◆ 确认保存
+类型      名称    路径                                      检测结果
+工具目录  codex   /Users/you/.codex/skills                  -
+工作流    V5      /Users/you/workspace/team-a/skills         12 skills / 3 共享项
+```
+
+切换失败时会同时给出原因和处理方式：
+
+```text
+✖ 操作失败
+  原因: 无法创建符号链接
+⚠ 处理方式: Windows 请开启 Developer Mode，或让管理员授予 Create symbolic links 权限，或以管理员身份运行终端。
+```
+
 ## 快速安装
 
 需要 Node.js 20.17 或更高的 LTS 版本，推荐 Node.js 22 LTS。
@@ -61,7 +96,7 @@ workflow-switcher use
 
 切换完成后，请新开对应 agent 会话，或重启对应客户端，让 skills 列表刷新。
 
-## 常用命令
+## 日常使用
 
 打开交互菜单：
 
@@ -107,40 +142,42 @@ workflow-switcher doctor
 
 ## 配置管理
 
+`workflow` 是 `source` 的别名，`tool` 是 `target` 的别名。两套命令都可用，推荐团队文档里使用更直观的 `workflow` 和 `tool`。
+
 添加工作流：
 
 ```bash
-workflow-switcher source add V5 /path/to/v5/skills
+workflow-switcher workflow add V5 /path/to/v5/skills
 ```
 
 添加工具目录：
 
 ```bash
-workflow-switcher target add codex /path/to/codex/skills
+workflow-switcher tool add codex /path/to/codex/skills
 ```
 
 查看已配置工作流：
 
 ```bash
-workflow-switcher source list
+workflow-switcher workflow list
 ```
 
 查看已配置工具目录：
 
 ```bash
-workflow-switcher target list
+workflow-switcher tool list
 ```
 
 删除工作流配置：
 
 ```bash
-workflow-switcher source remove V5
+workflow-switcher workflow remove V5
 ```
 
 删除工具目录配置：
 
 ```bash
-workflow-switcher target remove codex
+workflow-switcher tool remove codex
 ```
 
 删除配置不会删除你的真实工作流目录，也不会删除 Codex、Claude 等工具目录。
@@ -252,5 +289,6 @@ node bin/workflow-switcher.mjs setup
 运行测试：
 
 ```bash
+npm run check
 npm test
 ```

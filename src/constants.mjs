@@ -29,7 +29,9 @@ export const AUTO_ROOT_OPTIONAL_ENTRIES = ["README.md", ...AUTO_ROOT_MARKERS];
 export const RESERVED_NAMES = new Set([
   "setup",
   "source",
+  "workflow",
   "target",
+  "tool",
   "use",
   "current",
   "status",
