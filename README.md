@@ -43,6 +43,8 @@ workflow-switcher setup
 - 工具目录：Codex、Claude 或其他工具实际读取 skills 的目录。
 - 工作流目录：某套业务工作流的 skills 源目录，例如 `V5`、`ZW`。
 
+填写完成后，向导会展示汇总表。确认保存前不会写入配置文件。
+
 第 2 步，检查环境：
 
 ```bash

@@ -30,6 +30,20 @@ function validateAndPrintSource(skillsDir) {
 }
 
 /**
+ * 校验工作流目录并返回扫描结果，供 setup 汇总展示使用。
+ * @param {string} skillsDir 工作流 skills 源目录。
+ * @returns {{skills:Array,rootAdjuncts:Array}} 扫描结果。
+ */
+function validateSource(skillsDir) {
+  if (!fs.existsSync(skillsDir)) throw new Error(`工作流 skills 源目录不存在: ${skillsDir}`);
+  return spin("扫描工作流目录", () => {
+    const discovered = discoverSource(skillsDir);
+    assertNoDuplicateNames(discovered, skillsDir);
+    return discovered;
+  }, "工作流目录检测通过");
+}
+
+/**
  * 输出一段空行分隔的向导步骤标题，降低连续 prompt 的压迫感。
  * @param {string} title 步骤标题。
  */
@@ -196,7 +210,7 @@ async function promptSource(rl) {
   const name = validateName(await askText(rl, "请输入工作流名称"), "source");
   info("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
   const skillsDir = await askText(rl, "请输入工作流 skills 源目录");
-  validateAndPrintSource(skillsDir);
+  validateSource(skillsDir);
   return { name, skillsDir };
 }
 
@@ -227,29 +241,50 @@ async function runSetup() {
   try {
     banner("初始化本机工作流切换配置");
     info("先配置工具读取 skills 的目录，再配置可切换的工作流目录。");
+    const draftTargets = [];
+    const draftSources = [];
 
     guideStep("第 1 步：添加工具目录");
     let shouldAddTarget = Object.keys(config.targets).length === 0 || await askConfirm(rl, "添加或更新工具目录？", false);
     while (shouldAddTarget) {
       const target = await promptTarget(rl);
-      config = setTarget(config, target.name, target.activeDir);
-      success(`已添加工具目录: ${target.name}`);
-      kv("skills 目录", pathText(target.activeDir));
+      draftTargets.push(target);
+      success(`已记录工具目录: ${target.name}  ${pathText(target.activeDir)}`);
       shouldAddTarget = await askConfirm(rl, "继续添加另一个工具目录？", false);
     }
 
     guideStep("第 2 步：添加工作流");
     let shouldAddSource = Object.keys(config.sources).length === 0 || await askConfirm(rl, "添加或更新工作流？", false);
     while (shouldAddSource) {
-      const source = await promptSource(rl);
-      config = setSource(config, source.name, source.skillsDir);
-      success(`已添加工作流: ${source.name}`);
-      kv("skills 源目录", pathText(source.skillsDir));
+      const name = validateName(await askText(rl, "请输入工作流名称"), "source");
+      info("工作流目录是一套待切换的 skills 源目录，例如某个业务团队维护的 skills 文件夹。");
+      const skillsDir = await askText(rl, "请输入工作流 skills 源目录");
+      const discovered = validateSource(skillsDir);
+      draftSources.push({ name, skillsDir, skills: discovered.skills.length, rootAdjuncts: discovered.rootAdjuncts.length });
+      success(`已记录工作流: ${name}  ${discovered.skills.length} skills / ${discovered.rootAdjuncts.length} 共享项`);
       shouldAddSource = await askConfirm(rl, "继续添加另一个工作流？", false);
     }
 
+    if (draftTargets.length === 0 && draftSources.length === 0) {
+      warn("没有新增或更新任何配置。");
+      return;
+    }
+
+    guideStep("第 3 步：确认保存");
+    const summaryRows = [
+      ...draftTargets.map((target) => ["工具目录", target.name, pathText(target.activeDir), "-"]),
+      ...draftSources.map((source) => ["工作流", source.name, pathText(source.skillsDir), `${source.skills} skills / ${source.rootAdjuncts} 共享项`]),
+    ];
+    table(["类型", "名称", "路径", "检测结果"], summaryRows);
+    const shouldSave = await askConfirm(rl, "保存以上配置？", true);
+    if (!shouldSave) {
+      warn("已取消保存，现有配置未改变。");
+      return;
+    }
+
+    for (const target of draftTargets) config = setTarget(config, target.name, target.activeDir);
+    for (const source of draftSources) config = setSource(config, source.name, source.skillsDir);
     saveConfig(config);
-    guideStep("第 3 步：完成配置");
     success("配置已保存");
     kv("配置文件", pathText(configPath()));
     info("建议先执行 workflow-switcher doctor 检查路径和软链接权限。");
