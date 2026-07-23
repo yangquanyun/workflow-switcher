@@ -46,3 +46,37 @@ test("workflow/tool 别名可以写入 source 和 target 配置", () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("workflow ignore 命令可以添加、恢复和清空忽略列表", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "workflow-switcher-cli-ignore-"));
+  const configPath = path.join(root, "config.json");
+  const sourceDir = path.join(root, "source");
+
+  try {
+    fs.mkdirSync(path.join(sourceDir, "coding"), { recursive: true });
+    fs.writeFileSync(path.join(sourceDir, "coding", "SKILL.md"), "---\nname: coding\ndescription: test\n---\n");
+
+    const sourceResult = runCli(["workflow", "add", "V5", sourceDir], configPath);
+    assert.equal(sourceResult.status, 0, sourceResult.stderr || sourceResult.stdout);
+
+    const addResult = runCli(["workflow", "ignore", "add", "V5", "coding", "debugging"], configPath);
+    assert.equal(addResult.status, 0, addResult.stderr || addResult.stdout);
+
+    let config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    assert.deepEqual(config.sources.V5.ignoredSkills, ["coding", "debugging"]);
+
+    const removeResult = runCli(["workflow", "ignore", "remove", "V5", "coding"], configPath);
+    assert.equal(removeResult.status, 0, removeResult.stderr || removeResult.stdout);
+
+    config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    assert.deepEqual(config.sources.V5.ignoredSkills, ["debugging"]);
+
+    const clearResult = runCli(["workflow", "ignore", "clear", "V5"], configPath);
+    assert.equal(clearResult.status, 0, clearResult.stderr || clearResult.stdout);
+
+    config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    assert.deepEqual(config.sources.V5.ignoredSkills, []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

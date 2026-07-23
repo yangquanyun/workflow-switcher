@@ -63,13 +63,16 @@ export function walkSkillFiles(root) {
 /**
  * 扫描 source 下的 skill 条目并识别重复名称。
  * @param {string} root source 根目录。
+ * @param {{ignoredSkills?:string[]}} options 扫描选项。
  * @returns {{skills:Array,duplicates:Array}} 扫描结果。
  */
-export function discoverSkills(root) {
+export function discoverSkills(root, options = {}) {
   const skills = [];
+  const ignoredNames = new Set(options.ignoredSkills || []);
   for (const skillFile of walkSkillFiles(root)) {
     const name = parseSkillName(skillFile);
     if (!name) continue;
+    if (ignoredNames.has(name)) continue;
     const target = path.dirname(skillFile);
     skills.push({
       kind: "skill",
@@ -109,10 +112,11 @@ export function discoverRootAdjuncts(root) {
 /**
  * 生成某个 source 的完整投影条目，包含 skills 和根附属项。
  * @param {string} root source 根目录。
+ * @param {{ignoredSkills?:string[]}} options 扫描选项。
  * @returns {{skills:Array,rootAdjuncts:Array,duplicates:Array,entries:Array}} 投影结果。
  */
-export function discoverSource(root) {
-  const discovered = discoverSkills(root);
+export function discoverSource(root, options = {}) {
+  const discovered = discoverSkills(root, options);
   const skillNames = new Set(discovered.skills.map((skill) => skill.name));
   const rootAdjuncts = discoverRootAdjuncts(root).filter((entry) => !skillNames.has(entry.name));
   const rootNameConflicts = discoverRootAdjuncts(root).filter((entry) => skillNames.has(entry.name));

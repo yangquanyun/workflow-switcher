@@ -56,3 +56,33 @@ test("discoverSource 扫描 skills 和根附属项", () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("discoverSource 按 skill name 忽略投影项", () => {
+  const root = makeTempSource();
+  try {
+    writeSkill(root, "coding", "coding");
+    writeSkill(root, "debugging", "debugging");
+
+    const result = discoverSource(root, { ignoredSkills: ["debugging"] });
+
+    assert.deepEqual(result.skills.map((item) => item.name), ["coding"]);
+    assert.deepEqual(result.entries.map((item) => item.name), ["coding"]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("被忽略的 skill 不参与重复名称校验", () => {
+  const root = makeTempSource();
+  try {
+    writeSkill(root, "coding-a", "coding");
+    writeSkill(root, "coding-b", "coding");
+
+    const result = discoverSource(root, { ignoredSkills: ["coding"] });
+
+    assert.equal(result.skills.length, 0);
+    assert.equal(result.duplicates.length, 0);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

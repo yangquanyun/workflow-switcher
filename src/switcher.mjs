@@ -105,7 +105,7 @@ export function preflightSwitch(sourceName, source, targetName, target, config) 
   if (!target) throw new Error(`未知 target: ${targetName}`);
   if (!fs.existsSync(source.skillsDir)) throw new Error(`source 路径不存在: ${source.skillsDir}`);
 
-  const discovered = discoverSource(source.skillsDir);
+  const discovered = discoverSource(source.skillsDir, { ignoredSkills: source.ignoredSkills });
   assertNoDuplicateNames(discovered, source.skillsDir);
   assertWritableDir(target.activeDir);
   assertSymlinkCapability(target.activeDir);

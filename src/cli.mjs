@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import { BUILTIN_TARGET_NAMES } from "./constants.mjs";
 import { configPath } from "./paths.mjs";
-import { loadConfig, removeSource, removeTarget, saveConfig, setSource, setTarget } from "./config.mjs";
+import { addIgnoredSkills, loadConfig, removeIgnoredSkills, removeSource, removeTarget, saveConfig, setIgnoredSkills, setSource, setTarget } from "./config.mjs";
 import { discoverSource, assertNoDuplicateNames } from "./scanner.mjs";
 import { resolveTargetNames, switchSource } from "./switcher.mjs";
 import { readState } from "./state.mjs";
@@ -149,9 +149,17 @@ function printHelp() {
       ["setup", "交互式初始化工作流和工具目录"],
       ["workflow add [名称] [路径]", "添加工作流，等同于 source add"],
       ["workflow list", "查看工作流列表，等同于 source list"],
+      ["workflow ignore list <名称>", "查看工作流忽略的 skills"],
+      ["workflow ignore add <名称> <skill...>", "忽略一个或多个 skill"],
+      ["workflow ignore remove <名称> <skill...>", "恢复一个或多个 skill"],
+      ["workflow ignore clear <名称>", "清空忽略列表"],
       ["workflow remove <名称>", "删除工作流配置，等同于 source remove"],
       ["source add [名称] [路径]", "添加工作流"],
       ["source list", "查看工作流列表"],
+      ["source ignore list <名称>", "查看工作流忽略的 skills"],
+      ["source ignore add <名称> <skill...>", "忽略一个或多个 skill"],
+      ["source ignore remove <名称> <skill...>", "恢复一个或多个 skill"],
+      ["source ignore clear <名称>", "清空忽略列表"],
       ["source remove <名称>", "删除工作流配置"],
       ["tool add [名称] [路径]", "添加工具目录，等同于 target add"],
       ["tool list", "查看工具目录列表，等同于 target list"],
@@ -421,7 +429,64 @@ function printSources(config) {
   const entries = Object.entries(config.sources);
   if (entries.length === 0) return warn("暂无工作流，请执行 workflow-switcher source add");
   section("工作流");
-  table(["名称", "skills 源目录"], entries.map(([name, source]) => [nameText(name), pathText(source.skillsDir)]));
+  table(
+    ["名称", "skills 源目录", "忽略"],
+    entries.map(([name, source]) => [nameText(name), pathText(source.skillsDir), source.ignoredSkills?.length || 0]),
+  );
+}
+
+/**
+ * 打印指定 source 的忽略 skill 列表。
+ * @param {object} config 配置对象。
+ * @param {string} sourceName source 名称。
+ */
+function printIgnoredSkills(config, sourceName) {
+  const source = config.sources[validateName(sourceName, "source")];
+  if (!source) throw new Error(`未知 source: ${sourceName}`);
+  const ignoredSkills = source.ignoredSkills || [];
+  section(`忽略 skills: ${sourceName}`);
+  if (ignoredSkills.length === 0) {
+    info("当前没有忽略任何 skill。");
+    return;
+  }
+  table(["skill name"], ignoredSkills.map((skillName) => [nameText(skillName)]));
+}
+
+/**
+ * 执行 source ignore 子命令。
+ * @param {string[]} args 子命令参数。
+ */
+function runSourceIgnore(args) {
+  const [action, sourceName, ...skillNames] = args;
+  if (!action) throw new Error("source ignore 缺少操作: list/add/remove/clear");
+  if (!sourceName) throw new Error("source ignore 缺少工作流名称");
+  let config = loadConfig();
+
+  if (action === "list") return printIgnoredSkills(config, sourceName);
+  if (action === "add") {
+    if (skillNames.length === 0) throw new Error("source ignore add 至少需要一个 skill name");
+    config = addIgnoredSkills(config, sourceName, skillNames);
+    saveConfig(config);
+    printIgnoredSkills(config, sourceName);
+    next(`执行 workflow-switcher use ${sourceName} 让忽略列表生效。`);
+    return success("忽略列表已更新");
+  }
+  if (action === "remove") {
+    if (skillNames.length === 0) throw new Error("source ignore remove 至少需要一个 skill name");
+    config = removeIgnoredSkills(config, sourceName, skillNames);
+    saveConfig(config);
+    printIgnoredSkills(config, sourceName);
+    next(`执行 workflow-switcher use ${sourceName} 恢复关联。`);
+    return success("忽略列表已更新");
+  }
+  if (action === "clear") {
+    config = setIgnoredSkills(config, sourceName, []);
+    saveConfig(config);
+    printIgnoredSkills(config, sourceName);
+    next(`执行 workflow-switcher use ${sourceName} 恢复全部关联。`);
+    return success("忽略列表已清空");
+  }
+  throw new Error(`未知 source ignore 操作: ${action}`);
 }
 
 /**
@@ -541,6 +606,7 @@ export async function main(argv = []) {
     if (command === "source") {
       const [sub, name, dir] = parsed.args;
       let config = loadConfig();
+      if (sub === "ignore") return runSourceIgnore(parsed.args.slice(1));
       if (sub === "add") {
         if (name && dir) validateAndPrintSource(dir);
         config = name && dir ? setSource(config, name, dir) : await interactiveAddSource(config);

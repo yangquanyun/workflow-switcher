@@ -16,6 +16,20 @@ export function emptyConfig() {
 }
 
 /**
+ * 标准化忽略 skill 名称列表，保证配置稳定且不保留空值。
+ * @param {unknown} input 原始忽略列表。
+ * @returns {string[]} 规范化后的 skill 名称列表。
+ */
+export function normalizeIgnoredSkills(input) {
+  if (!Array.isArray(input)) return [];
+  const names = input
+    .filter((item) => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return [...new Set(names)].sort();
+}
+
+/**
  * 标准化配置，保证路径是绝对路径并过滤非法名称。
  * @param {unknown} raw 原始配置。
  * @returns {{version:number,sources:Object,targets:Object}} 标准配置。
@@ -26,8 +40,11 @@ export function normalizeConfig(raw) {
   for (const [name, source] of Object.entries(input.sources || {})) {
     const sourceName = validateName(name, "source");
     if (!source?.skillsDir) throw new Error(`source ${sourceName} 缺少 skillsDir`);
-    // 配置落盘统一使用绝对路径，后续状态比较更稳定。
-    sources[sourceName] = { skillsDir: absolutePath(source.skillsDir) };
+    // 配置落盘统一使用绝对路径，忽略列表只按 skill name 精确匹配。
+    sources[sourceName] = {
+      skillsDir: absolutePath(source.skillsDir),
+      ignoredSkills: normalizeIgnoredSkills(source.ignoredSkills),
+    };
   }
 
   const targets = {};
@@ -71,8 +88,63 @@ export function saveConfig(config, filePath = defaultConfigPath()) {
 export function setSource(config, name, skillsDir) {
   const next = normalizeConfig(config);
   const sourceName = validateName(name, "source");
-  next.sources[sourceName] = { skillsDir: absolutePath(skillsDir) };
+  const current = next.sources[sourceName] || {};
+  next.sources[sourceName] = {
+    skillsDir: absolutePath(skillsDir),
+    ignoredSkills: current.ignoredSkills || [],
+  };
   return next;
+}
+
+/**
+ * 覆盖指定 source 的忽略 skill 列表。
+ * @param {object} config 配置对象。
+ * @param {string} name source 名称。
+ * @param {string[]} ignoredSkills 忽略的 skill 名称列表。
+ * @returns {object} 更新后的配置。
+ */
+export function setIgnoredSkills(config, name, ignoredSkills) {
+  const next = normalizeConfig(config);
+  const sourceName = validateName(name, "source");
+  if (!next.sources[sourceName]) throw new Error(`未知 source: ${sourceName}`);
+  next.sources[sourceName] = {
+    ...next.sources[sourceName],
+    ignoredSkills: normalizeIgnoredSkills(ignoredSkills),
+  };
+  return next;
+}
+
+/**
+ * 向指定 source 添加忽略 skill。
+ * @param {object} config 配置对象。
+ * @param {string} name source 名称。
+ * @param {string[]} skillNames skill 名称列表。
+ * @returns {object} 更新后的配置。
+ */
+export function addIgnoredSkills(config, name, skillNames) {
+  const next = normalizeConfig(config);
+  const sourceName = validateName(name, "source");
+  if (!next.sources[sourceName]) throw new Error(`未知 source: ${sourceName}`);
+  return setIgnoredSkills(next, sourceName, [...next.sources[sourceName].ignoredSkills, ...skillNames]);
+}
+
+/**
+ * 从指定 source 移除忽略 skill，让后续 use 重新投影这些 skill。
+ * @param {object} config 配置对象。
+ * @param {string} name source 名称。
+ * @param {string[]} skillNames skill 名称列表。
+ * @returns {object} 更新后的配置。
+ */
+export function removeIgnoredSkills(config, name, skillNames) {
+  const next = normalizeConfig(config);
+  const sourceName = validateName(name, "source");
+  if (!next.sources[sourceName]) throw new Error(`未知 source: ${sourceName}`);
+  const removing = new Set(normalizeIgnoredSkills(skillNames));
+  return setIgnoredSkills(
+    next,
+    sourceName,
+    next.sources[sourceName].ignoredSkills.filter((skillName) => !removing.has(skillName)),
+  );
 }
 
 /**

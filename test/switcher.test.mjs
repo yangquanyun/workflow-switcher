@@ -53,6 +53,39 @@ test("switchSource 使用 symlink 投影 skills 和根附属项", { skip: proces
   }
 });
 
+test("switchSource 会清理后来加入 ignoredSkills 的受控 skill", { skip: process.platform === "win32" }, () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "workflow-switcher-ignore-"));
+  const source = path.join(root, "source");
+  const active = path.join(root, "active");
+  fs.mkdirSync(source, { recursive: true });
+
+  try {
+    writeSkill(source, "coding", "coding");
+    writeSkill(source, "debugging", "debugging");
+
+    const baseConfig = {
+      version: 3,
+      sources: { V5: { skillsDir: source, ignoredSkills: [] } },
+      targets: { codex: { activeDir: active, enabled: true } },
+    };
+    switchSource(baseConfig, "V5", ["codex"]);
+
+    const ignoredConfig = {
+      ...baseConfig,
+      sources: { V5: { skillsDir: source, ignoredSkills: ["debugging"] } },
+    };
+    const [result] = switchSource(ignoredConfig, "V5", ["codex"]);
+    const state = readState(active);
+
+    assert.equal(result.skills, 1);
+    assert.equal(fs.lstatSync(path.join(active, "coding")).isSymbolicLink(), true);
+    assert.equal(fs.existsSync(path.join(active, "debugging")), false);
+    assert.deepEqual(state.managed.map((item) => item.name), ["coding"]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("switchSource 遇到被改指向的受控名称时阻止切换", { skip: process.platform === "win32" }, () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "workflow-switcher-conflict-"));
   const source = path.join(root, "source");

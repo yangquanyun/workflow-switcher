@@ -24,7 +24,7 @@ export function runDoctor(config, cfgPath) {
   for (const [name, source] of Object.entries(config.sources)) {
     try {
       if (!fs.existsSync(source.skillsDir)) throw new Error("source 路径不存在");
-      const discovered = discoverSource(source.skillsDir);
+      const discovered = discoverSource(source.skillsDir, { ignoredSkills: source.ignoredSkills });
       assertNoDuplicateNames(discovered, source.skillsDir);
       checks.push({ scope: "source", name, status: "OK", message: `${source.skillsDir}，skills ${discovered.skills.length}，根附属项 ${discovered.rootAdjuncts.length}` });
     } catch (error) {

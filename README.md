@@ -168,6 +168,27 @@ workflow-switcher tool add codex /path/to/codex/skills
 workflow-switcher workflow list
 ```
 
+忽略当前不需要关联的 skill：
+
+```bash
+workflow-switcher workflow ignore add V5 figma-ui-spec shop-release-upload
+workflow-switcher use V5 --target codex
+```
+
+恢复其中一个或多个 skill：
+
+```bash
+workflow-switcher workflow ignore remove V5 figma-ui-spec
+workflow-switcher use V5 --target codex
+```
+
+查看或清空忽略列表：
+
+```bash
+workflow-switcher workflow ignore list V5
+workflow-switcher workflow ignore clear V5
+```
+
 查看已配置工具目录：
 
 ```bash
@@ -217,6 +238,30 @@ skills 目录: 你本机 codex 实际读取 skills 的目录
 ```text
 工作流名称: ZW
 工作流 skills 源目录: /Users/yangqy/workspace/1st/ai-toolkit/skills
+```
+
+### 忽略部分 skills
+
+如果某个工作流目录里包含暂时用不到的 skills，可以按 `SKILL.md` frontmatter 中的 `name` 配置忽略。忽略项保存在对应工作流配置中，不会修改源目录文件。
+
+```bash
+workflow-switcher workflow ignore add V5 figma-ui-spec shop-release-upload
+```
+
+下次执行 `use` 时，被忽略的 skill 不会被软链接关联到工具目录；如果它之前已经由 Workflow Switcher 创建过软链接，也会在切换时被清理。
+
+恢复时从忽略列表移除对应 name，再重新切换：
+
+```bash
+workflow-switcher workflow ignore remove V5 figma-ui-spec
+workflow-switcher use V5 --target codex
+```
+
+清空忽略列表会恢复该工作流下全部 skills 的投影：
+
+```bash
+workflow-switcher workflow ignore clear V5
+workflow-switcher use V5 --target codex
 ```
 
 ## 根目录共享项
